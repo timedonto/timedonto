@@ -1,0 +1,234 @@
+# =====================================================================
+# TimeDonto — Regras Globais para o Cursor
+# Versão: 1.0.0 | Atualizado: 2025
+# =====================================================================
+
+# ---------------------------------------------------------------------
+# 1. CONTEXTO DO PROJETO
+# ---------------------------------------------------------------------
+# TimeDonto é um SaaS multi-tenant para gestão de clínicas odontológicas.
+# Stack: Next.js 14+ (App Router), TypeScript strict, PostgreSQL, Prisma,
+#        Auth.js/NextAuth, Stripe, Zod, Tailwind CSS, shadcn/ui
+
+# ---------------------------------------------------------------------
+# 2. LINGUAGEM E PADRÕES GERAIS
+# ---------------------------------------------------------------------
+
+- Sempre utilizar TypeScript com 'strict: true'
+- Nunca gerar código em JavaScript puro
+- Seguir Clean Architecture: Domain → Application → Infra
+- Nunca colocar lógica de negócio dentro de componentes React
+- Usar Zod para validar TODOS os inputs de API e formulários
+- Evitar duplicação de código (princípio DRY)
+- Preferir composição sobre herança
+- Funções pequenas e com responsabilidade única
+
+# ---------------------------------------------------------------------
+# 3. ESTRUTURA DE ARQUIVOS E PASTAS
+# ---------------------------------------------------------------------
+
+- Nunca criar arquivos fora da pasta /src sem permissão explícita
+- Rotas do Next.js devem ficar apenas em /src/app/**/*
+- Lógica de domínio deve sempre estar em /src/modules/<feature>/domain
+- Casos de uso (application) ficam em /src/modules/<feature>/application
+- Implementações concretas de Prisma ficam em /src/modules/<feature>/infra
+- Componentes UI globais vão em /src/components/ui
+- Helpers e libs devem ser criados em /src/lib ou /src/config
+
+# Estrutura padrão de um módulo:
+# /src/modules/<feature>/
+#   ├── domain/        → Tipos, entidades, regras de negócio puras
+#   ├── application/   → Casos de uso (use cases / services)
+#   ├── infra/         → Repositórios Prisma, adapters externos
+#   └── mappers/       → Conversão entre tipos (DTOs ↔ domínio)
+
+# ---------------------------------------------------------------------
+# 4. BANCO DE DADOS E PRISMA
+# ---------------------------------------------------------------------
+
+- Toda interação com banco deve usar Prisma
+- Nunca acessar Prisma diretamente na UI ou domínio — apenas na camada de infra
+- Sempre incluir 'clinicId' em queries multi-tenant
+- Nunca retornar dados de outra clínica sem validar clinicId
+- Manter o schema.prisma sincronizado com data-model.md
+- Usar transactions para operações que afetam múltiplas tabelas
+- Sempre usar select ou include explícito (evitar select *)
+
+# ---------------------------------------------------------------------
+# 5. MULTI-TENANT (REGRAS CRÍTICAS)
+# ---------------------------------------------------------------------
+
+- Sempre utilizar session.user.clinicId para filtrar dados sensíveis
+- Nunca permitir acesso a dados sem validar que pertencem à mesma clínica
+- Qualquer tabela de negócio deve incluir campo clinicId
+- Validar clinicId no backend, NUNCA confiar apenas no frontend
+- Em caso de dúvida, SEMPRE filtrar por clinicId
+
+# Exemplo obrigatório em toda query:
+# const data = await prisma.patient.findMany({
+#   where: { clinicId: session.user.clinicId }
+# })
+
+# ---------------------------------------------------------------------
+# 6. AUTENTICAÇÃO E AUTORIZAÇÃO
+# ---------------------------------------------------------------------
+
+- Usar Auth.js / NextAuth em todas as rotas protegidas
+- Sempre verificar permissões com base no papel do usuário
+- Papéis válidos: OWNER, ADMIN, DENTIST, RECEPTIONIST
+- Recepcionistas NUNCA devem acessar prontuário
+- Apenas OWNER pode gerenciar assinatura (Stripe)
+- Apenas OWNER e ADMIN podem acessar financeiro completo
+
+# Hierarquia de permissões:
+# OWNER > ADMIN > DENTIST > RECEPTIONIST
+
+# ---------------------------------------------------------------------
+# 7. APIs (Next.js App Router)
+# ---------------------------------------------------------------------
+
+- APIs devem ser implementadas em /src/app/api/**
+- Sempre validar entrada com Zod ANTES de chamar use cases
+- Retornar erros padronizados com status HTTP adequados
+- Usar respostas consistentes:
+#   Sucesso: { success: true, data: any }
+#   Erro:    { success: false, error: string, code?: string }
+
+- Métodos HTTP corretos:
+#   GET    → Buscar dados
+#   POST   → Criar recursos
+#   PATCH  → Atualizar parcialmente
+#   DELETE → Remover (preferir soft delete)
+
+# ---------------------------------------------------------------------
+# 8. SERVER ACTIONS
+# ---------------------------------------------------------------------
+
+- Usar Server Actions apenas quando simplificar o fluxo UI → Backend
+- Server Actions também devem validar entrada com Zod
+- Nunca colocar lógica de negócio diretamente em Server Actions
+- Server Actions devem chamar casos de uso em /modules/<feature>/application
+
+# ---------------------------------------------------------------------
+# 9. UI/FRONTEND
+# ---------------------------------------------------------------------
+
+- Usar componentes Server sempre que possível (Next.js padrão)
+- Usar componentes Client apenas onde necessário (forms, interação)
+- Seguir atomic design: components/ui para elementos reutilizáveis
+- Seguir boas práticas de acessibilidade (aria-label, semantic HTML)
+- Usar shadcn/ui como base de componentes
+- Usar Tailwind CSS para estilização
+- Nunca usar CSS inline ou styled-components
+
+# ---------------------------------------------------------------------
+# 10. CÓDIGO GERADO
+# ---------------------------------------------------------------------
+
+- Antes de modificar arquivos existentes, explicar a mudança
+- Gerar comentários de explicação apenas quando solicitado
+- Manter estilo consistente com o restante do código do projeto
+- Usar imports relativos curtos, nunca caminhos absolutos longos
+- Agrupar imports: 1) externos, 2) internos, 3) tipos
+
+# ---------------------------------------------------------------------
+# 11. DOCUMENTAÇÃO E COMMITS
+# ---------------------------------------------------------------------
+
+- Sempre incluir comentários mínimos em casos de uso complexos
+- Commits devem seguir padrão Conventional Commits:
+#   feat:     Nova funcionalidade
+#   fix:      Correção de bug
+#   chore:    Tarefas de manutenção
+#   refactor: Refatoração sem mudar comportamento
+#   docs:     Documentação
+#   style:    Formatação (não afeta código)
+#   test:     Testes
+
+# ---------------------------------------------------------------------
+# 12. STRIPE E BILLING
+# ---------------------------------------------------------------------
+
+- Webhooks devem ficar em /src/app/api/billing/stripe-webhook/route.ts
+- Lógica de assinatura deve ficar em /src/modules/billing/application
+- Nunca criar checkout no frontend sem validação server-side
+- Apenas OWNER pode visualizar e alterar dados de assinatura
+- Sempre validar signature do webhook do Stripe
+
+# ---------------------------------------------------------------------
+# 13. LOGS E AUDITORIA
+# ---------------------------------------------------------------------
+
+- Operações sensíveis devem chamar logger em /src/lib/logger
+- Acesso ao prontuário DEVE gerar log obrigatório (AuditLog)
+- Alterações financeiras devem ser logadas
+- Logs devem conter: userId, clinicId, action, timestamp
+
+# ---------------------------------------------------------------------
+# 14. VALIDAÇÕES COM ZOD
+# ---------------------------------------------------------------------
+
+- Criar schemas Zod em /src/lib/validators ou dentro do módulo
+- Reutilizar schemas entre API e formulários
+- Mensagens de erro em português quando possível
+- Validar tipos, formatos e regras de negócio básicas
+
+# ---------------------------------------------------------------------
+# 15. TRATAMENTO DE ERROS
+# ---------------------------------------------------------------------
+
+- Usar try/catch em operações de banco e APIs externas
+- Retornar mensagens de erro amigáveis ao usuário
+- Logar erros técnicos no servidor
+- Nunca expor stack traces ou detalhes internos ao cliente
+
+# ---------------------------------------------------------------------
+# 16. O QUE O CURSOR NUNCA DEVE FAZER
+# ---------------------------------------------------------------------
+
+- ❌ Nunca criar tabelas sem clinicId (exceto Clinic e Subscription)
+- ❌ Nunca ignorar roles ou permissões definidas
+- ❌ Nunca escrever lógica de negócio em route.ts
+- ❌ Nunca misturar camadas (ex.: Prisma em domínio, UI chamando DB)
+- ❌ Nunca criar código em JavaScript puro
+- ❌ Nunca remover arquivos sem autorização
+- ❌ Nunca hardcodar IDs, senhas ou secrets
+- ❌ Nunca usar 'any' sem justificativa explícita
+- ❌ Nunca criar endpoints sem validação de sessão (exceto públicos)
+- ❌ Nunca retornar passwordHash em responses
+
+# ---------------------------------------------------------------------
+# 17. PADRÕES DE NOMENCLATURA
+# ---------------------------------------------------------------------
+
+# Arquivos e pastas:
+# - Componentes React: PascalCase (UserCard.tsx)
+# - Hooks: camelCase com prefixo use (usePatients.ts)
+# - Utilitários: camelCase (formatDate.ts)
+# - Tipos: PascalCase (Patient.ts)
+# - Constantes: SCREAMING_SNAKE_CASE
+
+# Variáveis e funções:
+# - camelCase para variáveis e funções
+# - PascalCase para tipos, interfaces e classes
+# - Prefixo 'I' NÃO é necessário para interfaces
+
+# Banco de dados (Prisma):
+# - Tabelas: PascalCase singular (Patient, Appointment)
+# - Campos: camelCase (createdAt, clinicId)
+# - Enums: PascalCase com valores SCREAMING_SNAKE_CASE
+
+# ---------------------------------------------------------------------
+# 18. ARQUIVOS DE REFERÊNCIA DO PROJETO
+# ---------------------------------------------------------------------
+
+# Sempre consultar antes de implementar:
+# - /docs/data-model.md      → Modelo de dados e relacionamentos
+# - /docs/api-spec.md        → Especificação de endpoints
+# - /docs/requirements.md    → Requisitos funcionais e não funcionais
+# - /docs/architecture.md    → Arquitetura e padrões
+# - /docs/ui-flow.md         → Fluxos de tela e navegação
+
+# =====================================================================
+# FIM DO ARQUIVO .cursorrules
+# =====================================================================

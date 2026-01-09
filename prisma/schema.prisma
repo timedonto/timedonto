@@ -1,0 +1,329 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =====================================================================
+// ENUMS
+// =====================================================================
+
+enum UserRole {
+  OWNER
+  ADMIN
+  DENTIST
+  RECEPTIONIST
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  CANCELED
+  RESCHEDULED
+  NO_SHOW
+  DONE
+}
+
+enum TreatmentPlanStatus {
+  OPEN
+  APPROVED
+  REJECTED
+}
+
+enum PaymentMethod {
+  CASH
+  PIX
+  CARD
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  CANCELED
+  PAST_DUE
+}
+
+enum InventoryMovementType {
+  IN
+  OUT
+}
+
+// =====================================================================
+// MODELS
+// =====================================================================
+
+model Clinic {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users              User[]
+  dentists           Dentist[]
+  patients           Patient[]
+  appointments       Appointment[]
+  records            Record[]
+  treatmentPlans     TreatmentPlan[]
+  payments           Payment[]
+  subscription       Subscription?
+  auditLogs          AuditLog[]
+  inventoryItems     InventoryItem[]
+  inventoryMovements InventoryMovement[]
+
+  @@map("clinics")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  clinicId     String
+  name         String
+  email        String
+  passwordHash String
+  role         UserRole
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  clinic             Clinic              @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  dentist            Dentist?
+  auditLogs          AuditLog[]
+  inventoryMovements InventoryMovement[]
+
+  @@unique([clinicId, email])
+  @@index([clinicId])
+  @@map("users")
+}
+
+model Dentist {
+  id           String   @id @default(cuid())
+  clinicId     String
+  userId       String   @unique
+  cro          String
+  specialty    String?
+  workingHours Json?
+  bankInfo     Json?
+  commission   Decimal? @db.Decimal(5, 2)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  clinic         Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments   Appointment[]
+  records        Record[]
+  treatmentPlans TreatmentPlan[]
+
+  @@index([clinicId])
+  @@map("dentists")
+}
+
+model Patient {
+  id        String    @id @default(cuid())
+  clinicId  String
+  name      String
+  email     String?
+  phone     String?
+  cpf       String?
+  birthDate DateTime?
+  address   String?
+  notes     String?   @db.Text
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  clinic         Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  appointments   Appointment[]
+  records        Record[]
+  treatmentPlans TreatmentPlan[]
+  payments       Payment[]
+
+  @@index([clinicId])
+  @@index([clinicId, name])
+  @@index([clinicId, email])
+  @@map("patients")
+}
+
+model Appointment {
+  id              String            @id @default(cuid())
+  clinicId        String
+  dentistId       String
+  patientId       String
+  date            DateTime
+  durationMinutes Int               @default(30)
+  status          AppointmentStatus @default(SCHEDULED)
+  procedure       String?
+  notes           String?           @db.Text
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  clinic             Clinic              @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  dentist            Dentist             @relation(fields: [dentistId], references: [id], onDelete: Cascade)
+  patient            Patient             @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  record             Record?
+  inventoryMovements InventoryMovement[]
+
+  @@index([clinicId])
+  @@index([clinicId, date])
+  @@index([clinicId, dentistId])
+  @@index([clinicId, patientId])
+  @@map("appointments")
+}
+
+model Record {
+  id            String   @id @default(cuid())
+  clinicId      String
+  patientId     String
+  dentistId     String
+  appointmentId String?  @unique
+  description   String   @db.Text
+  procedures    Json?
+  odontogram    Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  clinic      Clinic       @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  patient     Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  dentist     Dentist      @relation(fields: [dentistId], references: [id], onDelete: Cascade)
+  appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+
+  @@index([clinicId])
+  @@index([clinicId, patientId])
+  @@map("records")
+}
+
+model TreatmentPlan {
+  id          String              @id @default(cuid())
+  clinicId    String
+  patientId   String
+  dentistId   String
+  status      TreatmentPlanStatus @default(OPEN)
+  totalAmount Decimal             @db.Decimal(10, 2)
+  notes       String?             @db.Text
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  clinic  Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  patient Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  dentist Dentist         @relation(fields: [dentistId], references: [id], onDelete: Cascade)
+  items   TreatmentItem[]
+
+  @@index([clinicId])
+  @@index([clinicId, patientId])
+  @@index([clinicId, status])
+  @@map("treatment_plans")
+}
+
+model TreatmentItem {
+  id          String  @id @default(cuid())
+  planId      String
+  description String
+  tooth       String?
+  value       Decimal @db.Decimal(10, 2)
+  quantity    Int     @default(1)
+
+  plan TreatmentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@index([planId])
+  @@map("treatment_items")
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  clinicId    String
+  patientId   String?
+  amount      Decimal       @db.Decimal(10, 2)
+  method      PaymentMethod
+  description String?
+  createdAt   DateTime      @default(now())
+
+  clinic  Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  patient Patient? @relation(fields: [patientId], references: [id], onDelete: SetNull)
+
+  @@index([clinicId])
+  @@index([clinicId, createdAt])
+  @@map("payments")
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  clinicId             String             @unique
+  stripeCustomerId     String
+  stripeSubscriptionId String
+  status               SubscriptionStatus @default(INACTIVE)
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  clinicId   String
+  userId     String
+  action     String
+  targetId   String?
+  targetType String?
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
+  @@index([clinicId, userId])
+  @@index([clinicId, action])
+  @@index([clinicId, createdAt])
+  @@map("audit_logs")
+}
+
+model InventoryItem {
+  id              String   @id @default(cuid())
+  clinicId        String
+  name            String
+  description     String?
+  unit            String
+  currentQuantity Int      @default(0)
+  minQuantity     Int?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  clinic    Clinic              @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  movements InventoryMovement[]
+
+  @@index([clinicId])
+  @@index([clinicId, name])
+  @@map("inventory_items")
+}
+
+model InventoryMovement {
+  id            String                @id @default(cuid())
+  clinicId      String
+  itemId        String
+  type          InventoryMovementType
+  quantity      Int
+  appointmentId String?
+  createdById   String
+  notes         String?
+  createdAt     DateTime              @default(now())
+
+  clinic      Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  item        InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  appointment Appointment?  @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  createdBy   User          @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
+  @@index([clinicId, itemId])
+  @@index([clinicId, createdAt])
+  @@map("inventory_movements")
+}
