@@ -15,11 +15,11 @@ export default async function AppLayout({
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
       <Sidebar />
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
         <Header user={user} />
-        <main className="flex-1 p-6 bg-muted/30">
+        <main className="flex-1 p-8 max-w-7xl mx-auto w-full">
           {children}
         </main>
       </div>

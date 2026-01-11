@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TimeDonto - Entrar</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#2FC4B2",
+              heading: "#117C6F",
+              "background-teal": "#B2F0E8",
+              "background-light": "#ffffff",
+              "background-dark": "#0f172a",
+            },
+            fontFamily: {
+              display: ["Inter", "sans-serif"],
+            },
+            borderRadius: {
+              DEFAULT: "10px",
+            },
+          },
+        },
+      };
+    </script>
+<style type="text/tailwindcss">
+        body { font-family: 'Inter', sans-serif; }
+        .bg-medical-overlay {
+            background: linear-gradient(135deg, rgba(17, 124, 111, 0.85) 0%, rgba(47, 196, 178, 0.9) 100%);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-teal dark:bg-background-dark min-h-screen flex items-center justify-center p-0 md:p-4 transition-colors duration-200">
+<div class="flex w-full max-w-6xl h-full md:h-[800px] bg-white dark:bg-slate-900 rounded-none md:rounded-3xl shadow-2xl overflow-hidden">
+<div class="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+<img alt="Modern calming dental office environment" class="absolute inset-0 w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD37unq4CJN10eFwZSPHnBTru9sKcTbkOmIC_c51HPVJelMOiFwjmpV6Txdxy9MnpY54Tkj5QaigckPdlg1kCq-pfUlnKNRR6PCDwECiDKYxiiPKceFsHFkL-bEDP8B9Uju89ndORwdPlA6boQ6CPsJYUefPEwjKhLydiCyaMSu_4QhQWBhStefNrHHpla3SMeYIBsSGpOt9zgQsdBPdgfvcULezbY1rIF8BdjYRWWezehgwiyGAUUDSAfionz6kRZVJfbSTAB4Hzj3"/>
+<div class="absolute inset-0 bg-medical-overlay flex flex-col justify-between p-12 text-white">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-3xl">medical_services</span>
+<span class="text-2xl font-bold tracking-tight">TimeDonto</span>
+</div>
+<div>
+<h1 class="text-4xl font-bold leading-tight mb-4">A gestão da sua clínica em um só lugar.</h1>
+<p class="text-teal-50 text-lg opacity-90">Simplifique agendamentos, prontuários e o financeiro com a plataforma mais moderna do mercado odontológico.</p>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex -space-x-2">
+<img alt="Doctor avatar" class="w-10 h-10 rounded-full border-2 border-[#2FC4B2]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDIqpXeIx4p2nKidBlZ4VJvD7werfILJDzTZLfkbvmh_rE5YRcq1-j5sLBdigj_SINLyd1_kC-oePI2vTLvwwyL7a5HBTUhNsSLtBVdCns8Vg0Lj48iGRlgA7yA3ibBEHOAoQDEBCJaJjbxgF_zoPIcwEyzM0a2xzPvOCx9SGnM1UCCxS1nomfjccqNijC40bbfiHPndJ_drslzMUcGK_TTPFUYy8u5PElza0HOg6v_j8yxeeW3TImOn4Mu_2G19BTF4UHeBOEQSHii"/>
+<img alt="Dentist avatar" class="w-10 h-10 rounded-full border-2 border-[#2FC4B2]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBRShkQgt2l5Wx5unGzPMDK6KJYkS9hvpg-O63wdqTfN-99AyGpJgUKCsFE6Hlppn9fbxB1Z_6izUiLIIdVwqPyrhihiP8Ln-l12pW5JfPd13UXgAZ8t1nuXvpACAu9SFikFXYSxZeWxO2Q5dpDjiGeFTW9RkyHEgKUlX0-wBRM6liJd6kuZfTyulT-NVfD0UycB5Pe6fcPLeAFPq8oLaNN1V5cwWBgwQWhZmT1A0eSOea9TTxerCp2MkyyO7ul8e8DZ8RS4SBPh6CU"/>
+</div>
+<p class="text-sm font-medium text-teal-50 w-48 opacity-90">+2.000 dentistas já otimizaram sua rotina</p>
+</div>
+</div>
+</div>
+<div class="w-full lg:w-1/2 flex flex-col justify-center px-8 md:px-16 lg:px-24 py-12 bg-white dark:bg-slate-900">
+<div class="mb-10 text-center lg:text-left">
+<div class="lg:hidden flex justify-center items-center gap-2 mb-8">
+<span class="material-symbols-outlined text-heading text-3xl">medical_services</span>
+<span class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">TimeDonto</span>
+</div>
+<h2 class="text-3xl font-bold text-heading dark:text-teal-400 mb-2">Bem-vindo de volta!</h2>
+<p class="text-slate-500 dark:text-slate-400">Acesse sua conta para gerenciar sua clínica.</p>
+</div>
+<form class="space-y-6">
+<div>
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2" for="email">E-mail</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">alternate_email</span>
+<input class="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-DEFAULT ring-1 ring-slate-200 dark:ring-slate-700 focus:ring-2 focus:ring-primary dark:text-white transition-all shadow-sm" id="email" name="email" placeholder="seu@email.com" required="" type="email"/>
+</div>
+</div>
+<div>
+<div class="flex justify-between items-center mb-2">
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300" for="password">Senha</label>
+<a class="text-xs font-semibold text-heading hover:text-teal-700 transition-colors" href="#">Esqueceu a senha?</a>
+</div>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">lock_open</span>
+<input class="w-full pl-11 pr-12 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-DEFAULT ring-1 ring-slate-200 dark:ring-slate-700 focus:ring-2 focus:ring-primary dark:text-white transition-all shadow-sm" id="password" name="password" placeholder="Sua senha" required="" type="password"/>
+<button class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors" type="button">
+<span class="material-symbols-outlined text-xl">visibility</span>
+</button>
+</div>
+</div>
+<div class="flex items-center">
+<input class="h-4 w-4 text-primary focus:ring-primary border-slate-300 rounded cursor-pointer" id="remember-me" name="remember-me" type="checkbox"/>
+<label class="ml-2 block text-sm text-slate-600 dark:text-slate-400 cursor-pointer" for="remember-me">
+                    Lembrar de mim
+                </label>
+</div>
+<button class="w-full bg-primary hover:brightness-95 text-white font-bold py-3.5 px-4 rounded-DEFAULT transition-all shadow-lg shadow-primary/30 flex items-center justify-center gap-2 group" type="submit">
+<svg class="animate-spin h-5 w-5 text-white hidden" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+<path class="opacity-75" d="4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor"></path>
+</svg>
+<span>Entrar na plataforma</span>
+<span class="material-symbols-outlined text-lg group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+</form>
+<div class="mt-10 pt-8 border-t border-slate-100 dark:border-slate-800 text-center">
+<p class="text-slate-600 dark:text-slate-400">
+                Ainda não tem uma conta? 
+                <a class="text-heading font-bold hover:underline" href="#">Criar conta grátis</a>
+</p>
+</div>
+</div>
+</div>
+<button class="fixed bottom-6 right-6 p-3 bg-white dark:bg-slate-800 rounded-full shadow-lg text-slate-600 dark:text-slate-300 hover:scale-110 transition-transform z-50" onclick="document.documentElement.classList.toggle('dark')">
+<span class="material-symbols-outlined dark:hidden">dark_mode</span>
+<span class="material-symbols-outlined hidden dark:block">light_mode</span>
+</button>
+
+</body></html>

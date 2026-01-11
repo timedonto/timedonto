@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TimeDonto - Painel de Gestão Clínica</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
+<style type="text/tailwindcss">
+        :root {
+            --primary: #2FC4B2;
+            --heading: #117C6F;
+            --chart-main: #289C8E;
+            --chart-subtle: #8DE5DB;
+            --border-subtle: #B2F0E8;
+            --background-light: #f8fafc;
+            --surface-light: #ffffff;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-active { background-color: var(--primary); color: white; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#2FC4B2",
+                        heading: "#117C6F",
+                        chartMain: "#289C8E",
+                        chartSubtle: "#8DE5DB",
+                        borderSubtle: "#B2F0E8",
+                        "background-light": "#f8fafc",
+                        "background-dark": "#0f172a",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1e293b",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "12px",
+                    },
+                },
+            },
+        };
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen transition-colors duration-200">
+<div class="flex h-screen overflow-hidden">
+<aside class="w-64 border-r border-slate-200 dark:border-slate-800 bg-surface-light dark:bg-surface-dark flex flex-col">
+<div class="p-6">
+<h1 class="text-2xl font-bold text-heading tracking-tight">TimeDonto</h1>
+</div>
+<nav class="flex-1 px-4 space-y-1 overflow-y-auto">
+<a class="sidebar-active flex items-center px-4 py-3 rounded-lg font-medium transition-all" href="#">
+<span class="material-symbols-outlined mr-3 text-[var(--primary)] text-white">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center px-4 py-3 rounded-lg font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all group" href="#">
+<span class="material-symbols-outlined mr-3 text-slate-400 group-hover:text-primary">group</span>
+                Pacientes
+            </a>
+<a class="flex items-center px-4 py-3 rounded-lg font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all group" href="#">
+<span class="material-symbols-outlined mr-3 text-slate-400 group-hover:text-primary">calendar_today</span>
+                Agenda
+            </a>
+<a class="flex items-center px-4 py-3 rounded-lg font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all group" href="#">
+<span class="material-symbols-outlined mr-3 text-slate-400 group-hover:text-primary">medical_services</span>
+                Dentistas
+            </a>
+<a class="flex items-center px-4 py-3 rounded-lg font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all group" href="#">
+<span class="material-symbols-outlined mr-3 text-slate-400 group-hover:text-primary">description</span>
+                Orçamentos
+            </a>
+<a class="flex items-center px-4 py-3 rounded-lg font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all group" href="#">
+<span class="material-symbols-outlined mr-3 text-slate-400 group-hover:text-primary">payments</span>
+                Financeiro
+            </a>
+<a class="flex items-center px-4 py-3 rounded-lg font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all group" href="#">
+<span class="material-symbols-outlined mr-3 text-slate-400 group-hover:text-primary">inventory_2</span>
+                Estoque
+            </a>
+<a class="flex items-center px-4 py-3 rounded-lg font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all group" href="#">
+<span class="material-symbols-outlined mr-3 text-slate-400 group-hover:text-primary">bar_chart</span>
+                Relatórios
+            </a>
+<a class="flex items-center px-4 py-3 rounded-lg font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all group" href="#">
+<span class="material-symbols-outlined mr-3 text-slate-400 group-hover:text-primary">settings</span>
+                Configurações
+            </a>
+</nav>
+<div class="p-4 border-t border-slate-200 dark:border-slate-800">
+<div class="flex items-center p-2 rounded-lg bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 cursor-pointer">
+<div class="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center text-xs font-bold mr-3">N</div>
+<div class="flex-1 text-sm font-semibold">1 Pendência</div>
+<span class="material-symbols-outlined text-sm">close</span>
+</div>
+</div>
+</aside>
+<main class="flex-1 overflow-y-auto">
+<header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-surface-light dark:bg-surface-dark flex items-center justify-between px-8 sticky top-0 z-10 shadow-sm transition-colors duration-200">
+<div class="text-sm font-medium text-slate-500 dark:text-slate-400">Unidade Principal - OdontoClean</div>
+<div class="flex items-center space-x-6">
+<button class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-slate-500" id="theme-toggle">
+<span class="material-symbols-outlined" id="theme-toggle-icon">light_mode</span>
+</button>
+<div class="flex items-center text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined mr-2">account_circle</span>
+<span class="font-medium mr-2">Nathaniel Freitas</span>
+<span class="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] px-2 py-0.5 rounded font-bold uppercase">Owner</span>
+</div>
+<button class="flex items-center text-slate-500 hover:text-red-600 transition-colors">
+<span class="material-symbols-outlined mr-1">logout</span>
+<span>Sair</span>
+</button>
+</div>
+</header>
+<div class="p-8 max-w-7xl mx-auto space-y-8">
+<div>
+<h2 class="text-3xl font-bold tracking-tight text-heading">Dashboard</h2>
+<p class="text-slate-500 dark:text-slate-400 mt-1 text-lg">Bem-vindo de volta, Nathaniel Freitas!</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<div class="bg-white dark:bg-surface-dark p-6 rounded-xl border border-borderSubtle dark:border-slate-800 shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<span class="text-sm font-medium text-slate-500 dark:text-slate-400">Novos Pacientes</span>
+<span class="material-symbols-outlined text-primary">person_add</span>
+</div>
+<div class="flex items-end justify-between">
+<div>
+<div class="text-3xl font-bold text-heading">12</div>
+<div class="text-xs text-emerald-500 font-medium flex items-center mt-1">
+<span class="material-symbols-outlined text-xs mr-1">trending_up</span> +14%
+                            </div>
+</div>
+</div>
+</div>
+<div class="bg-white dark:bg-surface-dark p-6 rounded-xl border border-borderSubtle dark:border-slate-800 shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<span class="text-sm font-medium text-slate-500 dark:text-slate-400">Consultas Hoje</span>
+<span class="material-symbols-outlined text-primary">event_note</span>
+</div>
+<div class="flex items-end justify-between">
+<div>
+<div class="text-3xl font-bold text-heading">08</div>
+<div class="text-xs text-slate-400 font-medium mt-1">4 concluídas, 4 pendentes</div>
+</div>
+</div>
+</div>
+<div class="bg-white dark:bg-surface-dark p-6 rounded-xl border border-borderSubtle dark:border-slate-800 shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<span class="text-sm font-medium text-slate-500 dark:text-slate-400">Receita Mensal</span>
+<span class="material-symbols-outlined text-primary">payments</span>
+</div>
+<div class="flex items-end justify-between">
+<div>
+<div class="text-3xl font-bold text-heading">R$ 14.280</div>
+<div class="flex items-center mt-2 space-x-1">
+<div class="w-1 bg-chartMain h-2 rounded-full"></div>
+<div class="w-1 bg-chartMain h-4 rounded-full"></div>
+<div class="w-1 bg-chartMain h-3 rounded-full"></div>
+<div class="w-1 bg-chartMain h-5 rounded-full"></div>
+<div class="w-1 bg-chartMain h-4 rounded-full"></div>
+<span class="text-[10px] text-slate-400 ml-2 uppercase font-bold tracking-wider">Tendência alta</span>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-white dark:bg-surface-dark p-6 rounded-xl border border-borderSubtle dark:border-slate-800 shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<span class="text-sm font-medium text-slate-500 dark:text-slate-400">Orçamentos Abertos</span>
+<span class="material-symbols-outlined text-primary">receipt_long</span>
+</div>
+<div class="flex items-end justify-between">
+<div>
+<div class="text-3xl font-bold text-heading">24</div>
+<div class="text-xs text-amber-500 font-medium mt-1">R$ 4.500 em aberto</div>
+</div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<div class="lg:col-span-2 bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+<div class="flex items-center justify-between mb-8">
+<h3 class="text-lg font-bold text-heading">Desempenho Mensal</h3>
+<select class="text-sm border-slate-200 dark:border-slate-700 bg-transparent rounded-md dark:text-slate-400 focus:ring-primary">
+<option>Últimos 6 meses</option>
+<option>Último ano</option>
+</select>
+</div>
+<div class="h-64 flex items-end justify-between px-4 space-x-6">
+<div class="flex-1 flex flex-col items-center">
+<div class="w-full bg-slate-50 dark:bg-slate-800 rounded-t-md h-32 hover:opacity-80 transition-opacity relative group">
+<div class="absolute inset-x-0 bottom-0 bg-chartSubtle rounded-t-md h-20"></div>
+</div>
+<span class="text-[10px] mt-2 text-slate-500 uppercase font-semibold">Jan</span>
+</div>
+<div class="flex-1 flex flex-col items-center">
+<div class="w-full bg-slate-50 dark:bg-slate-800 rounded-t-md h-48 hover:opacity-80 transition-opacity relative group">
+<div class="absolute inset-x-0 bottom-0 bg-chartSubtle rounded-t-md h-36"></div>
+</div>
+<span class="text-[10px] mt-2 text-slate-500 uppercase font-semibold">Fev</span>
+</div>
+<div class="flex-1 flex flex-col items-center">
+<div class="w-full bg-slate-50 dark:bg-slate-800 rounded-t-md h-40 hover:opacity-80 transition-opacity relative group">
+<div class="absolute inset-x-0 bottom-0 bg-chartSubtle rounded-t-md h-28"></div>
+</div>
+<span class="text-[10px] mt-2 text-slate-500 uppercase font-semibold">Mar</span>
+</div>
+<div class="flex-1 flex flex-col items-center">
+<div class="w-full bg-slate-50 dark:bg-slate-800 rounded-t-md h-56 hover:opacity-80 transition-opacity relative group">
+<div class="absolute inset-x-0 bottom-0 bg-chartMain h-48 rounded-t-md"></div>
+</div>
+<span class="text-[10px] mt-2 text-slate-500 uppercase font-semibold">Abr</span>
+</div>
+<div class="flex-1 flex flex-col items-center">
+<div class="w-full bg-slate-50 dark:bg-slate-800 rounded-t-md h-44 hover:opacity-80 transition-opacity relative group">
+<div class="absolute inset-x-0 bottom-0 bg-chartSubtle rounded-t-md h-32"></div>
+</div>
+<span class="text-[10px] mt-2 text-slate-500 uppercase font-semibold">Mai</span>
+</div>
+<div class="flex-1 flex flex-col items-center">
+<div class="w-full bg-slate-50 dark:bg-slate-800 rounded-t-md h-52 hover:opacity-80 transition-opacity relative group">
+<div class="absolute inset-x-0 bottom-0 bg-chartSubtle rounded-t-md h-40"></div>
+</div>
+<span class="text-[10px] mt-2 text-slate-500 uppercase font-semibold">Jun</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm overflow-hidden flex flex-col">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-lg font-bold text-heading">Próximas Consultas</h3>
+<button class="text-xs text-primary font-semibold hover:underline">Ver todas</button>
+</div>
+<div class="space-y-4 flex-1">
+<div class="flex items-center p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer group">
+<div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-heading font-bold mr-4">JD</div>
+<div class="flex-1">
+<h4 class="text-sm font-semibold">Julia Duarte</h4>
+<p class="text-[11px] text-slate-500 dark:text-slate-400">Limpeza e Avaliação</p>
+</div>
+<div class="text-right">
+<div class="text-xs font-bold text-slate-700 dark:text-slate-300">14:00</div>
+<div class="text-[10px] text-slate-400">Hoje</div>
+</div>
+</div>
+<div class="flex items-center p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group">
+<div class="w-10 h-10 rounded-full bg-chartMain/20 flex items-center justify-center text-chartMain font-bold mr-4">MR</div>
+<div class="flex-1">
+<h4 class="text-sm font-semibold">Marcos Rocha</h4>
+<p class="text-[11px] text-slate-500 dark:text-slate-400">Extração Sisos</p>
+</div>
+<div class="text-right">
+<div class="text-xs font-bold text-slate-700 dark:text-slate-300">15:30</div>
+<div class="text-[10px] text-slate-400">Hoje</div>
+</div>
+</div>
+<div class="flex items-center p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group">
+<div class="w-10 h-10 rounded-full bg-chartSubtle/40 flex items-center justify-center text-heading font-bold mr-4">AL</div>
+<div class="flex-1">
+<h4 class="text-sm font-semibold">Ana Luiza</h4>
+<p class="text-[11px] text-slate-500 dark:text-slate-400">Manutenção Aparelho</p>
+</div>
+<div class="text-right">
+<div class="text-xs font-bold text-slate-700 dark:text-slate-300">16:45</div>
+<div class="text-[10px] text-slate-400">Hoje</div>
+</div>
+</div>
+</div>
+<button class="mt-6 w-full py-2.5 bg-primary text-white rounded-lg font-medium hover:opacity-90 transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined text-sm mr-2">add</span>
+                        Novo Agendamento
+                    </button>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+<div class="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+<h3 class="text-lg font-bold text-heading">Atividade Recente</h3>
+<div class="flex space-x-2">
+<div class="relative">
+<span class="absolute inset-y-0 left-3 flex items-center text-slate-400">
+<span class="material-symbols-outlined text-sm">search</span>
+</span>
+<input class="pl-9 pr-4 py-1.5 text-xs bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-lg focus:ring-primary w-48" placeholder="Filtrar..." type="text"/>
+</div>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead>
+<tr class="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-50/50 dark:bg-slate-900/50">
+<th class="px-6 py-3 font-bold">Data</th>
+<th class="px-6 py-3 font-bold">Paciente</th>
+<th class="px-6 py-3 font-bold">Serviço</th>
+<th class="px-6 py-3 font-bold">Profissional</th>
+<th class="px-6 py-3 font-bold">Valor</th>
+<th class="px-6 py-3 font-bold text-right">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4 text-xs">22 Abr, 10:30</td>
+<td class="px-6 py-4">
+<div class="text-sm font-medium">Carlos Andrade</div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-500">Implante Dentário</td>
+<td class="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">Dr. Ricardo S.</td>
+<td class="px-6 py-4 text-sm font-semibold">R$ 1.200,00</td>
+<td class="px-6 py-4 text-right">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-heading dark:bg-primary/20 dark:text-primary uppercase">Pago</span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4 text-xs">22 Abr, 09:15</td>
+<td class="px-6 py-4">
+<div class="text-sm font-medium">Beatriz Nunes</div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-500">Ortodontia</td>
+<td class="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">Dra. Helena F.</td>
+<td class="px-6 py-4 text-sm font-semibold">R$ 180,00</td>
+<td class="px-6 py-4 text-right">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 uppercase">Pendente</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+</div>
+<script>
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    const themeToggleIcon = document.getElementById('theme-toggle-icon');
+    const htmlElement = document.documentElement;
+    themeToggleBtn.addEventListener('click', () => {
+        if (htmlElement.classList.contains('dark')) {
+            htmlElement.classList.remove('dark');
+            themeToggleIcon.textContent = 'light_mode';
+            localStorage.setItem('theme', 'light');
+        } else {
+            htmlElement.classList.add('dark');
+            themeToggleIcon.textContent = 'dark_mode';
+            localStorage.setItem('theme', 'dark');
+        }
+    });
+    if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        htmlElement.classList.add('dark');
+        themeToggleIcon.textContent = 'dark_mode';
+    } else {
+        htmlElement.classList.remove('dark');
+        themeToggleIcon.textContent = 'light_mode';
+    }
+</script>
+
+</body></html>

@@ -7,8 +7,8 @@
   --card-foreground: #0a0a0a;
   --popover: #ffffff;
   --popover-foreground: #0a0a0a;
-  --primary: #2563eb;
-  --primary-foreground: #f8fafc;
+  --primary: #2FC4B2;
+  --primary-foreground: #ffffff;
   --secondary: #f1f5f9;
   --secondary-foreground: #0f172a;
   --muted: #f1f5f9;
@@ -19,32 +19,46 @@
   --destructive-foreground: #f8fafc;
   --border: #e2e8f0;
   --input: #e2e8f0;
-  --ring: #2563eb;
-  --radius: 0.5rem;
+  --ring: #2FC4B2;
+  --radius: 10px;
+
+  /* Custom TimeDonto colors */
+  --heading: #117C6F;
+  --background-teal: #B2F0E8;
+  --chart-main: #289C8E;
+  --chart-subtle: #8DE5DB;
+  --border-subtle: #B2F0E8;
+  --surface: #ffffff;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #f8fafc;
-    --card: #0a0a0a;
-    --card-foreground: #f8fafc;
-    --popover: #0a0a0a;
-    --popover-foreground: #f8fafc;
-    --primary: #3b82f6;
-    --primary-foreground: #0f172a;
-    --secondary: #1e293b;
-    --secondary-foreground: #f8fafc;
-    --muted: #1e293b;
-    --muted-foreground: #94a3b8;
-    --accent: #1e293b;
-    --accent-foreground: #f8fafc;
-    --destructive: #7f1d1d;
-    --destructive-foreground: #f8fafc;
-    --border: #1e293b;
-    --input: #1e293b;
-    --ring: #3b82f6;
-  }
+.dark {
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --card: #1e293b;
+  --card-foreground: #f8fafc;
+  --popover: #0f172a;
+  --popover-foreground: #f8fafc;
+  --primary: #2FC4B2;
+  --primary-foreground: #ffffff;
+  --secondary: #1e293b;
+  --secondary-foreground: #f8fafc;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #1e293b;
+  --accent-foreground: #f8fafc;
+  --destructive: #7f1d1d;
+  --destructive-foreground: #f8fafc;
+  --border: #1e293b;
+  --input: #1e293b;
+  --ring: #2FC4B2;
+
+  /* Custom TimeDonto colors */
+  --heading: #2FC4B2;
+  --background-teal: #0f172a;
+  --chart-main: #2FC4B2;
+  --chart-subtle: #117C6F;
+  --border-subtle: #1e293b;
+  --surface: #1e293b;
 }
 
 @theme inline {
@@ -73,6 +87,14 @@
   --radius-xl: calc(var(--radius) + 4px);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Custom TimeDonto theme additions */
+  --color-heading: var(--heading);
+  --color-background-teal: var(--background-teal);
+  --color-chart-main: var(--chart-main);
+  --color-chart-subtle: var(--chart-subtle);
+  --color-border-subtle: var(--border-subtle);
+  --color-surface: var(--surface);
 }
 
 * {
