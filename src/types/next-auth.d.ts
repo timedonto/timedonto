@@ -1,4 +1,4 @@
-import type { UserRole } from '@/config/constants'
+import type { UserRole } from '@prisma/client'
 
 declare module 'next-auth' {
   interface Session {

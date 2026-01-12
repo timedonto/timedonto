@@ -1,0 +1,1 @@
+export { DentistFormModal } from './dentist-form-modal'

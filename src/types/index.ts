@@ -1,4 +1,4 @@
-import type { UserRole } from '@/config/constants'
+import type { UserRole } from '@prisma/client'
 
 // Tipo do usuário na sessão
 export interface SessionUser {

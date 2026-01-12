@@ -1,5 +1,5 @@
 import { hash } from 'bcryptjs'
-import { prisma } from '@/lib/db'
+import { prisma } from '@/lib/database'
 import type { CreateClinicData, ApiResponse } from '@/types'
 
 interface SignupResult {

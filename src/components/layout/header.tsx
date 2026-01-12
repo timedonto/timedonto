@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { signOut } from 'next-auth/react'
 import { LogOut, User, Moon, Sun, CircleUser } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { roleLabels } from '@/components/auth/require-role'
 import type { SessionUser } from '@/types'
 
 interface HeaderProps {
@@ -41,8 +42,8 @@ export function Header({ user }: HeaderProps) {
         <div className="flex items-center text-slate-700 dark:text-slate-300">
           <CircleUser className="h-6 w-6 mr-2 text-slate-400" />
           <span className="font-medium mr-2">{user.name}</span>
-          <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] px-2 py-0.5 rounded font-bold uppercase">
-            {user.role}
+          <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] px-2 py-0.5 rounded font-bold">
+            {roleLabels[user.role] || user.role}
           </span>
         </div>
 

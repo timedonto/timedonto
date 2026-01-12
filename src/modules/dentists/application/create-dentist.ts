@@ -1,0 +1,106 @@
+import { UserRole } from '@prisma/client'
+import { dentistRepository } from '../infra/dentist.repository'
+import { userRepository } from '@/modules/users/infra/user.repository'
+import { 
+  createDentistSchema, 
+  CreateDentistInput, 
+  DentistOutput 
+} from '../domain/dentist.schema'
+
+export interface CreateDentistParams {
+  clinicId: string
+  currentUserRole: UserRole
+  data: CreateDentistInput
+}
+
+export interface CreateDentistResult {
+  success: boolean
+  data?: DentistOutput
+  error?: string
+  warning?: string
+}
+
+/**
+ * Cria um novo dentista com validações de permissão e regras de negócio
+ */
+export async function createDentist(params: CreateDentistParams): Promise<CreateDentistResult> {
+  const { clinicId, currentUserRole, data } = params
+
+  try {
+    // Validar dados de entrada
+    const validation = createDentistSchema.safeParse(data)
+    if (!validation.success) {
+      return {
+        success: false,
+        error: `Dados inválidos: ${validation.error.issues.map(i => i.message).join(', ')}`
+      }
+    }
+
+    const validatedData = validation.data
+
+    // Regra de negócio: Apenas OWNER e ADMIN podem criar dentistas
+    if (currentUserRole !== UserRole.OWNER && currentUserRole !== UserRole.ADMIN) {
+      return {
+        success: false,
+        error: 'Apenas proprietários e administradores podem criar dentistas'
+      }
+    }
+
+    // Regra de negócio: Verificar se userId existe e pertence à clínica
+    const user = await userRepository.findById(validatedData.userId, clinicId)
+    if (!user) {
+      return {
+        success: false,
+        error: 'Usuário não encontrado ou não pertence a esta clínica'
+      }
+    }
+
+    // Verificar se usuário está ativo
+    if (!user.isActive) {
+      return {
+        success: false,
+        error: 'Não é possível criar dentista para um usuário inativo'
+      }
+    }
+
+    // Regra de negócio: Verificar se user já não é dentista
+    const existingDentist = await dentistRepository.findByUserId(validatedData.userId, clinicId)
+    if (existingDentist) {
+      return {
+        success: false,
+        error: 'Este usuário já é um dentista na clínica'
+      }
+    }
+
+    // Verificar se CRO já existe na clínica
+    const croExists = await dentistRepository.croExists(validatedData.cro, clinicId)
+    if (croExists) {
+      return {
+        success: false,
+        error: 'Este CRO já está cadastrado na clínica'
+      }
+    }
+
+    // Alertar se user não tem role DENTIST (mas não impedir criação)
+    let warning: string | undefined
+    if (user.role !== UserRole.DENTIST) {
+      warning = `Atenção: O usuário tem o cargo "${user.role}" mas está sendo cadastrado como dentista. Considere alterar o cargo do usuário para "DENTIST".`
+    }
+
+    // Criar dentista
+    const newDentist = await dentistRepository.create(clinicId, validatedData)
+
+    return {
+      success: true,
+      data: newDentist,
+      warning
+    }
+
+  } catch (error) {
+    console.error('Erro ao criar dentista:', error)
+    return {
+      success: false,
+      error: 'Erro interno do servidor'
+    }
+  }
+}

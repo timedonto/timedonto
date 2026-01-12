@@ -1,4 +1,4 @@
-import { type UserRole } from './constants'
+import { type UserRole } from '@prisma/client'
 
 export type Permission =
   | 'clinic:manage'
