@@ -1,11 +1,22 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, use, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Pencil, Loader2, Calendar, FileText, DollarSign } from 'lucide-react'
+import { ArrowLeft, Pencil, Loader2, Calendar, FileText, DollarSign, Plus } from 'lucide-react'
+import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import { AppointmentStatus } from '@prisma/client'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { PatientFormModal } from '@/components/patients/patient-form-modal'
 
 interface Patient {
@@ -29,25 +40,67 @@ interface ApiResponse {
   error?: string
 }
 
+interface AppointmentApiData {
+  id: string
+  clinicId: string
+  dentistId: string
+  patientId: string
+  date: string
+  durationMinutes: number
+  status: AppointmentStatus
+  procedure: string | null
+  notes: string | null
+  createdAt: string
+  updatedAt: string
+  dentist: {
+    id: string
+    cro: string
+    specialty: string | null
+    user: {
+      id: string
+      name: string
+      email: string
+    }
+  }
+  patient: {
+    id: string
+    name: string
+    email: string | null
+    phone: string | null
+  }
+}
+
+interface AppointmentsApiResponse {
+  success: boolean
+  data?: AppointmentApiData[]
+  error?: string
+}
+
 interface PatientDetailsPageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default function PatientDetailsPage({ params }: PatientDetailsPageProps) {
   const router = useRouter()
+  const { id } = use(params)
   const [patient, setPatient] = useState<Patient | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('agenda')
+  
+  // Estados para agendamentos
+  const [appointments, setAppointments] = useState<AppointmentApiData[]>([])
+  const [loadingAppointments, setLoadingAppointments] = useState(false)
+  const [appointmentsError, setAppointmentsError] = useState<string | null>(null)
 
   // Buscar dados do paciente
-  const fetchPatient = async () => {
+  const fetchPatient = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
 
-      const response = await fetch(`/api/patients/${params.id}`)
+      const response = await fetch(`/api/patients/${id}`)
       const data: ApiResponse = await response.json()
 
       if (!response.ok) {
@@ -70,12 +123,12 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
     } finally {
       setLoading(false)
     }
-  }
+  }, [id])
 
   // Carregar paciente ao montar o componente
   useEffect(() => {
     fetchPatient()
-  }, [params.id])
+  }, [fetchPatient])
 
   // Handlers
   const handleBack = () => {
@@ -88,6 +141,46 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
 
   const handleEditSuccess = () => {
     fetchPatient() // Recarregar dados após edição
+  }
+
+  // Buscar agendamentos do paciente
+  const fetchAppointments = useCallback(async () => {
+    try {
+      setLoadingAppointments(true)
+      setAppointmentsError(null)
+
+      const response = await fetch(`/api/appointments?patientId=${id}`)
+      
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status} - ${response.statusText}`)
+      }
+
+      const data: AppointmentsApiResponse = await response.json()
+
+      if (data.success && data.data) {
+        setAppointments(data.data)
+      } else {
+        throw new Error(data.error || 'Erro desconhecido ao buscar agendamentos')
+      }
+    } catch (err) {
+      console.error('Erro ao buscar agendamentos:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar agendamentos'
+      setAppointmentsError(errorMessage)
+    } finally {
+      setLoadingAppointments(false)
+    }
+  }, [id])
+
+  // Carregar agendamentos quando a aba agenda for ativada
+  useEffect(() => {
+    if (activeTab === 'agenda' && patient) {
+      fetchAppointments()
+    }
+  }, [activeTab, patient, fetchAppointments])
+
+  const handleNewAppointment = () => {
+    // TODO: Implementar abertura do modal com patientId pré-selecionado
+    console.log('Novo agendamento para paciente:', id)
   }
 
   // Formatadores
@@ -114,6 +207,46 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
       return date.toLocaleDateString('pt-BR')
     } catch {
       return '-'
+    }
+  }
+
+  // Configuração de cores para status de agendamento
+  const getStatusBadgeVariant = (status: AppointmentStatus) => {
+    switch (status) {
+      case AppointmentStatus.SCHEDULED:
+        return 'default'
+      case AppointmentStatus.CONFIRMED:
+        return 'success'
+      case AppointmentStatus.CANCELED:
+        return 'destructive'
+      case AppointmentStatus.RESCHEDULED:
+        return 'secondary'
+      case AppointmentStatus.NO_SHOW:
+        return 'warning'
+      case AppointmentStatus.DONE:
+        return 'success'
+      default:
+        return 'default'
+    }
+  }
+
+  // Labels para status de agendamento
+  const getStatusLabel = (status: AppointmentStatus) => {
+    switch (status) {
+      case AppointmentStatus.SCHEDULED:
+        return 'Agendado'
+      case AppointmentStatus.CONFIRMED:
+        return 'Confirmado'
+      case AppointmentStatus.CANCELED:
+        return 'Cancelado'
+      case AppointmentStatus.RESCHEDULED:
+        return 'Reagendado'
+      case AppointmentStatus.NO_SHOW:
+        return 'Não Compareceu'
+      case AppointmentStatus.DONE:
+        return 'Concluído'
+      default:
+        return status
     }
   }
 
@@ -284,12 +417,93 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
         <Card>
           <CardContent className="pt-6">
             {activeTab === 'agenda' && (
-              <div className="text-center py-8">
-                <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Agenda</h3>
-                <p className="text-muted-foreground">
-                  Agendamentos serão implementados na Sprint 4
-                </p>
+              <div className="space-y-4">
+                {/* Header da aba Agenda */}
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Agendamentos</h3>
+                  <Button onClick={handleNewAppointment} size="sm" className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Novo Agendamento
+                  </Button>
+                </div>
+
+                {/* Lista de agendamentos */}
+                {loadingAppointments ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Carregando agendamentos...
+                    </div>
+                  </div>
+                ) : appointmentsError ? (
+                  <div className="text-center py-8">
+                    <div className="text-center">
+                      <h4 className="text-md font-semibold text-destructive mb-2">Erro ao carregar agendamentos</h4>
+                      <p className="text-muted-foreground mb-4">{appointmentsError}</p>
+                      <Button onClick={fetchAppointments} variant="outline" size="sm">
+                        Tentar novamente
+                      </Button>
+                    </div>
+                  </div>
+                ) : appointments.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h4 className="text-md font-semibold mb-2">Nenhum agendamento encontrado</h4>
+                    <p className="text-muted-foreground mb-4">
+                      Este paciente ainda não possui agendamentos
+                    </p>
+                    <Button onClick={handleNewAppointment} size="sm" className="flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      Criar Primeiro Agendamento
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Data/Hora</TableHead>
+                          <TableHead>Dentista</TableHead>
+                          <TableHead>Procedimento</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {appointments.map((appointment) => (
+                          <TableRow key={appointment.id}>
+                            <TableCell className="font-medium">
+                              <div className="flex flex-col">
+                                <span>
+                                  {format(new Date(appointment.date), "dd/MM/yyyy", { locale: ptBR })}
+                                </span>
+                                <span className="text-sm text-muted-foreground">
+                                  {format(new Date(appointment.date), "HH:mm", { locale: ptBR })} 
+                                  ({appointment.durationMinutes}min)
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{appointment.dentist.user.name}</span>
+                                <span className="text-sm text-muted-foreground">
+                                  {appointment.dentist.cro}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {appointment.procedure || '-'}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={getStatusBadgeVariant(appointment.status)}>
+                                {getStatusLabel(appointment.status)}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </div>
             )}
 
