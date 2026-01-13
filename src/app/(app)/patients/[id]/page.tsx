@@ -2,10 +2,11 @@
 
 import { useState, useEffect, use, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Pencil, Loader2, Calendar, FileText, DollarSign, Plus } from 'lucide-react'
+import { useSession } from 'next-auth/react'
+import { ArrowLeft, Pencil, Loader2, Calendar, FileText, DollarSign, Plus, Eye } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { AppointmentStatus } from '@prisma/client'
+import { AppointmentStatus, UserRole } from '@prisma/client'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -18,6 +19,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { PatientFormModal } from '@/components/patients/patient-form-modal'
+import { RecordFormModal } from '@/components/records/record-form-modal'
 
 interface Patient {
   id: string
@@ -76,23 +78,65 @@ interface AppointmentsApiResponse {
   error?: string
 }
 
+interface RecordApiData {
+  id: string
+  clinicId: string
+  patientId: string
+  dentistId: string
+  appointmentId: string | null
+  description: string
+  procedures: string | null
+  odontogram: string | null
+  createdAt: string
+  updatedAt: string
+  patient: {
+    id: string
+    name: string
+  }
+  dentist: {
+    id: string
+    specialty: string | null
+    user: {
+      id: string
+      name: string
+    }
+  }
+  appointment: {
+    id: string
+    date: string
+  } | null
+}
+
+interface RecordsApiResponse {
+  success: boolean
+  data?: RecordApiData[]
+  error?: string
+}
+
 interface PatientDetailsPageProps {
   params: Promise<{ id: string }>
 }
 
 export default function PatientDetailsPage({ params }: PatientDetailsPageProps) {
   const router = useRouter()
+  const { data: session } = useSession()
   const { id } = use(params)
   const [patient, setPatient] = useState<Patient | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [recordModalOpen, setRecordModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('agenda')
   
   // Estados para agendamentos
   const [appointments, setAppointments] = useState<AppointmentApiData[]>([])
   const [loadingAppointments, setLoadingAppointments] = useState(false)
   const [appointmentsError, setAppointmentsError] = useState<string | null>(null)
+
+  // Estados para prontuários
+  const [records, setRecords] = useState<RecordApiData[]>([])
+  const [loadingRecords, setLoadingRecords] = useState(false)
+  const [recordsError, setRecordsError] = useState<string | null>(null)
 
   // Buscar dados do paciente
   const fetchPatient = useCallback(async () => {
@@ -181,6 +225,59 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
   const handleNewAppointment = () => {
     // TODO: Implementar abertura do modal com patientId pré-selecionado
     console.log('Novo agendamento para paciente:', id)
+  }
+
+  // Buscar prontuários do paciente
+  const fetchRecords = useCallback(async () => {
+    try {
+      setLoadingRecords(true)
+      setRecordsError(null)
+
+      const response = await fetch(`/api/patients/${id}/records`)
+      
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status} - ${response.statusText}`)
+      }
+
+      const data: RecordsApiResponse = await response.json()
+
+      if (data.success && data.data) {
+        setRecords(data.data)
+      } else {
+        throw new Error(data.error || 'Erro desconhecido ao buscar prontuários')
+      }
+    } catch (err) {
+      console.error('Erro ao buscar prontuários:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar prontuários'
+      setRecordsError(errorMessage)
+    } finally {
+      setLoadingRecords(false)
+    }
+  }, [id])
+
+  // Verificar se o usuário pode ver prontuários (não é RECEPTIONIST)
+  const canViewRecords = session?.user?.role !== UserRole.RECEPTIONIST
+
+  // Carregar prontuários quando a aba prontuário for ativada
+  useEffect(() => {
+    if (activeTab === 'prontuario' && patient && canViewRecords) {
+      fetchRecords()
+    }
+  }, [activeTab, patient, canViewRecords, fetchRecords])
+
+  const handleNewRecord = () => {
+    console.log("Abrindo modal de prontuário")
+    setRecordModalOpen(true)
+  }
+
+  const handleViewRecord = (recordId: string) => {
+    router.push(`/records/${recordId}`)
+  }
+
+  // Truncar descrição para exibição na lista
+  const truncateDescription = (description: string, maxLength: number = 100) => {
+    if (description.length <= maxLength) return description
+    return description.substring(0, maxLength) + '...'
   }
 
   // Formatadores
@@ -297,10 +394,11 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
     )
   }
 
+  // Configurar abas baseado nas permissões do usuário
   const tabs = [
     { id: 'agenda', label: 'Agenda', icon: Calendar },
     { id: 'orcamentos', label: 'Orçamentos', icon: DollarSign },
-    { id: 'prontuario', label: 'Prontuário', icon: FileText },
+    ...(canViewRecords ? [{ id: 'prontuario', label: 'Prontuário', icon: FileText }] : []),
   ]
 
   return (
@@ -517,13 +615,94 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
               </div>
             )}
 
-            {activeTab === 'prontuario' && (
-              <div className="text-center py-8">
-                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Prontuário</h3>
-                <p className="text-muted-foreground">
-                  Prontuário será implementado na Sprint 5
-                </p>
+            {activeTab === 'prontuario' && canViewRecords && (
+              <div className="space-y-4">
+                {/* Header da aba Prontuário */}
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Prontuário Médico</h3>
+                  <Button onClick={handleNewRecord} size="sm" className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Novo Registro
+                  </Button>
+                </div>
+
+                {/* Lista de prontuários */}
+                {loadingRecords ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Carregando prontuários...
+                    </div>
+                  </div>
+                ) : recordsError ? (
+                  <div className="text-center py-8">
+                    <div className="text-center">
+                      <h4 className="text-md font-semibold text-destructive mb-2">Erro ao carregar prontuários</h4>
+                      <p className="text-muted-foreground mb-4">{recordsError}</p>
+                      <Button onClick={fetchRecords} variant="outline" size="sm">
+                        Tentar novamente
+                      </Button>
+                    </div>
+                  </div>
+                ) : records.length === 0 ? (
+                  <div className="text-center py-8">
+                    <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h4 className="text-md font-semibold mb-2">Nenhum registro encontrado</h4>
+                    <p className="text-muted-foreground mb-4">
+                      Este paciente ainda não possui registros no prontuário
+                    </p>
+                    <Button onClick={handleNewRecord} size="sm" className="flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      Criar Primeiro Registro
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {records.map((record) => (
+                      <Card key={record.id} className="hover:shadow-md transition-shadow">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 space-y-2">
+                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                <span className="font-medium">
+                                  {format(new Date(record.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                                </span>
+                                <span>•</span>
+                                <span>Dr(a). {record.dentist.user.name}</span>
+                                {record.dentist.specialty && (
+                                  <>
+                                    <span>•</span>
+                                    <span>{record.dentist.specialty}</span>
+                                  </>
+                                )}
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-sm font-medium">Descrição:</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {truncateDescription(record.description)}
+                                </p>
+                              </div>
+                              {record.appointment && (
+                                <div className="text-xs text-muted-foreground">
+                                  Relacionado ao agendamento de {format(new Date(record.appointment.date), "dd/MM/yyyy", { locale: ptBR })}
+                                </div>
+                              )}
+                            </div>
+                            <Button
+                              onClick={() => handleViewRecord(record.id)}
+                              variant="outline"
+                              size="sm"
+                              className="flex items-center gap-2 ml-4"
+                            >
+                              <Eye className="h-4 w-4" />
+                              Ver Detalhes
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
@@ -536,6 +715,17 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
         onOpenChange={setIsEditModalOpen}
         patient={patient}
         onSuccess={handleEditSuccess}
+      />
+
+      {/* Modal de novo prontuário */}
+      <RecordFormModal
+        open={recordModalOpen}
+        onOpenChange={setRecordModalOpen}
+        patientId={id}
+        onSuccess={() => {
+          setRecordModalOpen(false)
+          fetchRecords()
+        }}
       />
     </div>
   )
