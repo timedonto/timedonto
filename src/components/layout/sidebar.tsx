@@ -24,16 +24,22 @@ interface MenuItem {
   href: string
   label: string
   icon: any
+  requiredRoles?: UserRole[]
 }
 
-// Links principais (todos os usuários)
+// Links principais
 const mainMenuItems: MenuItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/appointments', label: 'Agenda', icon: Calendar },
   { href: '/patients', label: 'Pacientes', icon: Users },
   { href: '/dentists', label: 'Dentistas', icon: Stethoscope },
   { href: '/treatment-plans', label: 'Orçamentos', icon: FileText },
-  { href: '/finance', label: 'Financeiro', icon: DollarSign },
+  { 
+    href: '/finance', 
+    label: 'Financeiro', 
+    icon: DollarSign,
+    requiredRoles: [UserRole.OWNER, UserRole.ADMIN]
+  },
   { href: '/inventory', label: 'Estoque', icon: Package },
   { href: '/reports', label: 'Relatórios', icon: BarChart3 },
 ]
@@ -59,6 +65,14 @@ export function Sidebar() {
 
   // Verificar se usuário pode acessar configurações (OWNER ou ADMIN)
   const canAccessSettings = currentUser?.role === UserRole.OWNER || currentUser?.role === UserRole.ADMIN
+
+  // Verificar se usuário pode acessar um item do menu
+  const canAccessMenuItem = (item: MenuItem): boolean => {
+    if (!item.requiredRoles || item.requiredRoles.length === 0) {
+      return true // Item disponível para todos
+    }
+    return currentUser?.role ? item.requiredRoles.includes(currentUser.role) : false
+  }
 
   // Buscar sessão do usuário
   useEffect(() => {
@@ -116,7 +130,9 @@ export function Sidebar() {
       <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
         {/* Menu principal */}
         <div className="space-y-1">
-          {mainMenuItems.map(renderMenuItem)}
+          {mainMenuItems
+            .filter(canAccessMenuItem)
+            .map(renderMenuItem)}
         </div>
 
         {/* Separador e menu de configurações (apenas OWNER/ADMIN) */}

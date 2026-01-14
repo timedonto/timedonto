@@ -1,0 +1,642 @@
+import { prisma } from '@/lib/database'
+import {
+  CreateTreatmentPlanInput,
+  UpdateTreatmentPlanInput,
+  ListTreatmentPlansInput,
+  TreatmentPlanOutput,
+  TreatmentItemInput,
+  TreatmentItemOutput,
+  calculateTotalAmount
+} from '../domain/treatment-plan.schema'
+
+export class TreatmentPlanRepository {
+  /**
+   * Lista orçamentos de uma clínica com filtros opcionais
+   */
+  async findMany(clinicId: string, filters?: ListTreatmentPlansInput): Promise<TreatmentPlanOutput[]> {
+    const where: any = {
+      clinicId,
+    }
+
+    // Aplicar filtros
+    if (filters?.patientId) {
+      where.patientId = filters.patientId
+    }
+
+    if (filters?.dentistId) {
+      where.dentistId = filters.dentistId
+    }
+
+    if (filters?.status) {
+      where.status = filters.status
+    }
+
+    const treatmentPlans = await prisma.treatmentPlan.findMany({
+      where,
+      select: {
+        id: true,
+        clinicId: true,
+        patientId: true,
+        dentistId: true,
+        status: true,
+        totalAmount: true,
+        notes: true,
+        createdAt: true,
+        updatedAt: true,
+        patient: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          }
+        },
+        dentist: {
+          select: {
+            id: true,
+            cro: true,
+            specialty: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              }
+            }
+          }
+        },
+        items: {
+          select: {
+            id: true,
+            planId: true,
+            description: true,
+            tooth: true,
+            value: true,
+            quantity: true,
+          },
+          orderBy: {
+            description: 'asc'
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
+
+    return treatmentPlans.map(plan => ({
+      id: plan.id,
+      clinicId: plan.clinicId,
+      patientId: plan.patientId,
+      dentistId: plan.dentistId,
+      status: plan.status as any,
+      totalAmount: Number(plan.totalAmount),
+      notes: plan.notes,
+      createdAt: plan.createdAt,
+      updatedAt: plan.updatedAt,
+      items: plan.items.map(item => ({
+        id: item.id,
+        planId: item.planId,
+        description: item.description,
+        tooth: item.tooth,
+        value: Number(item.value),
+        quantity: item.quantity,
+      })),
+      patient: plan.patient
+        ? {
+            id: plan.patient.id,
+            name: plan.patient.name,
+            email: plan.patient.email,
+            phone: plan.patient.phone,
+          }
+        : null,
+      dentist: plan.dentist
+        ? {
+            id: plan.dentist.id,
+            cro: plan.dentist.cro,
+            specialty: plan.dentist.specialty,
+            user: {
+              id: plan.dentist.user.id,
+              name: plan.dentist.user.name,
+              email: plan.dentist.user.email,
+            },
+          }
+        : null,
+    }))
+  }
+
+  /**
+   * Busca orçamento por ID validando que pertence à clínica
+   */
+  async findById(id: string, clinicId: string): Promise<TreatmentPlanOutput | null> {
+    const treatmentPlan = await prisma.treatmentPlan.findFirst({
+      where: {
+        id,
+        clinicId
+      },
+      select: {
+        id: true,
+        clinicId: true,
+        patientId: true,
+        dentistId: true,
+        status: true,
+        totalAmount: true,
+        notes: true,
+        createdAt: true,
+        updatedAt: true,
+        patient: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          }
+        },
+        dentist: {
+          select: {
+            id: true,
+            cro: true,
+            specialty: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              }
+            }
+          }
+        },
+        items: {
+          select: {
+            id: true,
+            planId: true,
+            description: true,
+            tooth: true,
+            value: true,
+            quantity: true,
+          },
+          orderBy: {
+            description: 'asc'
+          }
+        }
+      }
+    })
+
+    if (!treatmentPlan) {
+      return null
+    }
+
+    return {
+      id: treatmentPlan.id,
+      clinicId: treatmentPlan.clinicId,
+      patientId: treatmentPlan.patientId,
+      dentistId: treatmentPlan.dentistId,
+      status: treatmentPlan.status as any,
+      totalAmount: Number(treatmentPlan.totalAmount),
+      notes: treatmentPlan.notes,
+      createdAt: treatmentPlan.createdAt,
+      updatedAt: treatmentPlan.updatedAt,
+      items: treatmentPlan.items.map(item => ({
+        id: item.id,
+        planId: item.planId,
+        description: item.description,
+        tooth: item.tooth,
+        value: Number(item.value),
+        quantity: item.quantity,
+      })),
+      patient: treatmentPlan.patient
+        ? {
+            id: treatmentPlan.patient.id,
+            name: treatmentPlan.patient.name,
+            email: treatmentPlan.patient.email,
+            phone: treatmentPlan.patient.phone,
+          }
+        : null,
+      dentist: treatmentPlan.dentist
+        ? {
+            id: treatmentPlan.dentist.id,
+            cro: treatmentPlan.dentist.cro,
+            specialty: treatmentPlan.dentist.specialty,
+            user: {
+              id: treatmentPlan.dentist.user.id,
+              name: treatmentPlan.dentist.user.name,
+              email: treatmentPlan.dentist.user.email,
+            },
+          }
+        : null,
+    }
+  }
+
+  /**
+   * Cria um novo orçamento com itens em uma transação
+   */
+  async create(clinicId: string, data: CreateTreatmentPlanInput): Promise<TreatmentPlanOutput> {
+    // Calcular total automaticamente
+    const totalAmount = calculateTotalAmount(data.items)
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Criar o plano de tratamento
+      const treatmentPlan = await tx.treatmentPlan.create({
+        data: {
+          clinicId,
+          patientId: data.patientId,
+          dentistId: data.dentistId,
+          totalAmount,
+          notes: data.notes || null,
+        }
+      })
+
+      // Criar os itens
+      const items = await tx.treatmentItem.createMany({
+        data: data.items.map(item => ({
+          planId: treatmentPlan.id,
+          description: item.description,
+          tooth: item.tooth || null,
+          value: item.value,
+          quantity: item.quantity,
+        }))
+      })
+
+      // Buscar o resultado completo
+      return await tx.treatmentPlan.findUnique({
+        where: { id: treatmentPlan.id },
+        select: {
+          id: true,
+          clinicId: true,
+          patientId: true,
+          dentistId: true,
+          status: true,
+          totalAmount: true,
+          notes: true,
+          createdAt: true,
+          updatedAt: true,
+          items: {
+            select: {
+              id: true,
+              planId: true,
+              description: true,
+              tooth: true,
+              value: true,
+              quantity: true,
+            },
+            orderBy: {
+              description: 'asc'
+            }
+          }
+        }
+      })
+    })
+
+    if (!result) {
+      throw new Error('Erro ao criar orçamento')
+    }
+
+    return {
+      id: result.id,
+      clinicId: result.clinicId,
+      patientId: result.patientId,
+      dentistId: result.dentistId,
+      status: result.status as any,
+      totalAmount: Number(result.totalAmount),
+      notes: result.notes,
+      createdAt: result.createdAt,
+      updatedAt: result.updatedAt,
+      items: result.items.map(item => ({
+        id: item.id,
+        planId: item.planId,
+        description: item.description,
+        tooth: item.tooth,
+        value: Number(item.value),
+        quantity: item.quantity,
+      }))
+    }
+  }
+
+  /**
+   * Atualiza um orçamento existente
+   */
+  async update(id: string, clinicId: string, data: UpdateTreatmentPlanInput): Promise<TreatmentPlanOutput | null> {
+    const updateData: any = {}
+
+    if (data.status !== undefined) {
+      updateData.status = data.status
+    }
+
+    if (data.notes !== undefined) {
+      updateData.notes = data.notes || null
+    }
+
+    const treatmentPlan = await prisma.treatmentPlan.update({
+      where: {
+        id,
+        clinicId
+      },
+      data: updateData,
+      select: {
+        id: true,
+        clinicId: true,
+        patientId: true,
+        dentistId: true,
+        status: true,
+        totalAmount: true,
+        notes: true,
+        createdAt: true,
+        updatedAt: true,
+        items: {
+          select: {
+            id: true,
+            planId: true,
+            description: true,
+            tooth: true,
+            value: true,
+            quantity: true,
+          },
+          orderBy: {
+            description: 'asc'
+          }
+        }
+      }
+    })
+
+    return {
+      id: treatmentPlan.id,
+      clinicId: treatmentPlan.clinicId,
+      patientId: treatmentPlan.patientId,
+      dentistId: treatmentPlan.dentistId,
+      status: treatmentPlan.status as any,
+      totalAmount: Number(treatmentPlan.totalAmount),
+      notes: treatmentPlan.notes,
+      createdAt: treatmentPlan.createdAt,
+      updatedAt: treatmentPlan.updatedAt,
+      items: treatmentPlan.items.map(item => ({
+        id: item.id,
+        planId: item.planId,
+        description: item.description,
+        tooth: item.tooth,
+        value: Number(item.value),
+        quantity: item.quantity,
+      }))
+    }
+  }
+
+  /**
+   * Adiciona um item ao orçamento e recalcula o total
+   */
+  async addItem(planId: string, clinicId: string, itemData: TreatmentItemInput): Promise<TreatmentPlanOutput | null> {
+    const result = await prisma.$transaction(async (tx) => {
+      // Verificar se o plano existe e pertence à clínica
+      const plan = await tx.treatmentPlan.findFirst({
+        where: {
+          id: planId,
+          clinicId
+        },
+        include: {
+          items: true
+        }
+      })
+
+      if (!plan) {
+        throw new Error('Orçamento não encontrado')
+      }
+
+      // Criar o novo item
+      await tx.treatmentItem.create({
+        data: {
+          planId,
+          description: itemData.description,
+          tooth: itemData.tooth || null,
+          value: itemData.value,
+          quantity: itemData.quantity,
+        }
+      })
+
+      // Buscar todos os itens atualizados para recalcular o total
+      const updatedItems = await tx.treatmentItem.findMany({
+        where: { planId }
+      })
+
+      const newTotal = updatedItems.reduce((total, item) => {
+        return total + (Number(item.value) * item.quantity)
+      }, 0)
+
+      // Atualizar o total do plano
+      return await tx.treatmentPlan.update({
+        where: { id: planId },
+        data: { totalAmount: newTotal },
+        select: {
+          id: true,
+          clinicId: true,
+          patientId: true,
+          dentistId: true,
+          status: true,
+          totalAmount: true,
+          notes: true,
+          createdAt: true,
+          updatedAt: true,
+          items: {
+            select: {
+              id: true,
+              planId: true,
+              description: true,
+              tooth: true,
+              value: true,
+              quantity: true,
+            },
+            orderBy: {
+              description: 'asc'
+            }
+          }
+        }
+      })
+    })
+
+    return {
+      id: result.id,
+      clinicId: result.clinicId,
+      patientId: result.patientId,
+      dentistId: result.dentistId,
+      status: result.status as any,
+      totalAmount: Number(result.totalAmount),
+      notes: result.notes,
+      createdAt: result.createdAt,
+      updatedAt: result.updatedAt,
+      items: result.items.map(item => ({
+        id: item.id,
+        planId: item.planId,
+        description: item.description,
+        tooth: item.tooth,
+        value: Number(item.value),
+        quantity: item.quantity,
+      }))
+    }
+  }
+
+  /**
+   * Remove um item do orçamento e recalcula o total
+   */
+  async removeItem(itemId: string, planId: string, clinicId: string): Promise<TreatmentPlanOutput | null> {
+    const result = await prisma.$transaction(async (tx) => {
+      // Verificar se o plano existe e pertence à clínica
+      const plan = await tx.treatmentPlan.findFirst({
+        where: {
+          id: planId,
+          clinicId
+        }
+      })
+
+      if (!plan) {
+        throw new Error('Orçamento não encontrado')
+      }
+
+      // Verificar se o item existe no plano
+      const item = await tx.treatmentItem.findFirst({
+        where: {
+          id: itemId,
+          planId
+        }
+      })
+
+      if (!item) {
+        throw new Error('Item não encontrado no orçamento')
+      }
+
+      // Remover o item
+      await tx.treatmentItem.delete({
+        where: { id: itemId }
+      })
+
+      // Buscar todos os itens restantes para recalcular o total
+      const remainingItems = await tx.treatmentItem.findMany({
+        where: { planId }
+      })
+
+      const newTotal = remainingItems.reduce((total, item) => {
+        return total + (Number(item.value) * item.quantity)
+      }, 0)
+
+      // Atualizar o total do plano
+      return await tx.treatmentPlan.update({
+        where: { id: planId },
+        data: { totalAmount: newTotal },
+        select: {
+          id: true,
+          clinicId: true,
+          patientId: true,
+          dentistId: true,
+          status: true,
+          totalAmount: true,
+          notes: true,
+          createdAt: true,
+          updatedAt: true,
+          items: {
+            select: {
+              id: true,
+              planId: true,
+              description: true,
+              tooth: true,
+              value: true,
+              quantity: true,
+            },
+            orderBy: {
+              description: 'asc'
+            }
+          }
+        }
+      })
+    })
+
+    return {
+      id: result.id,
+      clinicId: result.clinicId,
+      patientId: result.patientId,
+      dentistId: result.dentistId,
+      status: result.status as any,
+      totalAmount: Number(result.totalAmount),
+      notes: result.notes,
+      createdAt: result.createdAt,
+      updatedAt: result.updatedAt,
+      items: result.items.map(item => ({
+        id: item.id,
+        planId: item.planId,
+        description: item.description,
+        tooth: item.tooth,
+        value: Number(item.value),
+        quantity: item.quantity,
+      }))
+    }
+  }
+
+  /**
+   * Verifica se um orçamento pertence à clínica
+   */
+  async belongsToClinic(id: string, clinicId: string): Promise<boolean> {
+    const plan = await prisma.treatmentPlan.findFirst({
+      where: {
+        id,
+        clinicId
+      },
+      select: { id: true }
+    })
+
+    return !!plan
+  }
+
+  /**
+   * Lista orçamentos por paciente
+   */
+  async findByPatientId(patientId: string, clinicId: string): Promise<TreatmentPlanOutput[]> {
+    return this.findMany(clinicId, { patientId })
+  }
+
+  /**
+   * Lista orçamentos por dentista
+   */
+  async findByDentistId(dentistId: string, clinicId: string): Promise<TreatmentPlanOutput[]> {
+    return this.findMany(clinicId, { dentistId })
+  }
+
+  /**
+   * Conta orçamentos por status
+   */
+  async countByStatus(clinicId: string): Promise<Record<string, number>> {
+    const counts = await prisma.treatmentPlan.groupBy({
+      by: ['status'],
+      where: { clinicId },
+      _count: {
+        id: true
+      }
+    })
+
+    const result: Record<string, number> = {
+      OPEN: 0,
+      APPROVED: 0,
+      REJECTED: 0
+    }
+
+    counts.forEach(count => {
+      result[count.status] = count._count.id
+    })
+
+    return result
+  }
+
+  /**
+   * Calcula valor total de orçamentos aprovados
+   */
+  async getTotalApprovedValue(clinicId: string): Promise<number> {
+    const result = await prisma.treatmentPlan.aggregate({
+      where: {
+        clinicId,
+        status: 'APPROVED'
+      },
+      _sum: {
+        totalAmount: true
+      }
+    })
+
+    return Number(result._sum.totalAmount) || 0
+  }
+}
+
+// Exportar instância singleton
+export const treatmentPlanRepository = new TreatmentPlanRepository()

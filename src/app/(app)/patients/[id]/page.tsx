@@ -3,7 +3,7 @@
 import { useState, useEffect, use, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { ArrowLeft, Pencil, Loader2, Calendar, FileText, DollarSign, Plus, Eye } from 'lucide-react'
+import { ArrowLeft, Pencil, Loader2, Calendar, FileText, DollarSign, Plus, Eye, Receipt } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { AppointmentStatus, UserRole } from '@prisma/client'
@@ -20,6 +20,8 @@ import {
 } from '@/components/ui/table'
 import { PatientFormModal } from '@/components/patients/patient-form-modal'
 import { RecordFormModal } from '@/components/records/record-form-modal'
+import { TreatmentPlanFormModal } from '@/components/treatment-plans/treatment-plan-form-modal'
+import { PaymentFormModal } from '@/components/finance/payment-form-modal'
 
 interface Patient {
   id: string
@@ -113,6 +115,70 @@ interface RecordsApiResponse {
   error?: string
 }
 
+interface TreatmentPlanApiData {
+  id: string
+  clinicId: string
+  patientId: string
+  dentistId: string
+  status: 'OPEN' | 'APPROVED' | 'REJECTED'
+  totalAmount: number
+  notes: string | null
+  createdAt: string
+  updatedAt: string
+  items: {
+    id: string
+    planId: string
+    description: string
+    tooth: string | null
+    value: number
+    quantity: number
+  }[]
+  patient?: {
+    id: string
+    name: string
+    email: string | null
+    phone: string | null
+  }
+  dentist?: {
+    id: string
+    cro: string
+    specialty: string | null
+    user: {
+      id: string
+      name: string
+      email: string
+    }
+  }
+}
+
+interface TreatmentPlansApiResponse {
+  success: boolean
+  data?: TreatmentPlanApiData[]
+  error?: string
+}
+
+interface PaymentApiData {
+  id: string
+  clinicId: string
+  patientId: string | null
+  amount: number
+  method: 'CASH' | 'PIX' | 'CARD'
+  description: string | null
+  createdAt: string
+  patient?: {
+    id: string
+    name: string
+    email: string | null
+    phone: string | null
+  } | null
+}
+
+interface PaymentsApiResponse {
+  success: boolean
+  data?: PaymentApiData[]
+  error?: string
+}
+
 interface PatientDetailsPageProps {
   params: Promise<{ id: string }>
 }
@@ -126,6 +192,8 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
   const [error, setError] = useState<string | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [recordModalOpen, setRecordModalOpen] = useState(false)
+  const [treatmentPlanModalOpen, setTreatmentPlanModalOpen] = useState(false)
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('agenda')
   
   // Estados para agendamentos
@@ -137,6 +205,16 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
   const [records, setRecords] = useState<RecordApiData[]>([])
   const [loadingRecords, setLoadingRecords] = useState(false)
   const [recordsError, setRecordsError] = useState<string | null>(null)
+
+  // Estados para orçamentos
+  const [treatmentPlans, setTreatmentPlans] = useState<TreatmentPlanApiData[]>([])
+  const [loadingTreatmentPlans, setLoadingTreatmentPlans] = useState(false)
+  const [treatmentPlansError, setTreatmentPlansError] = useState<string | null>(null)
+
+  // Estados para pagamentos
+  const [payments, setPayments] = useState<PaymentApiData[]>([])
+  const [loadingPayments, setLoadingPayments] = useState(false)
+  const [paymentsError, setPaymentsError] = useState<string | null>(null)
 
   // Buscar dados do paciente
   const fetchPatient = useCallback(async () => {
@@ -258,6 +336,9 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
   // Verificar se o usuário pode ver prontuários (não é RECEPTIONIST)
   const canViewRecords = session?.user?.role !== UserRole.RECEPTIONIST
 
+  // Verificar se o usuário pode ver financeiro (apenas OWNER e ADMIN)
+  const canViewFinance = session?.user?.role === UserRole.OWNER || session?.user?.role === UserRole.ADMIN
+
   // Carregar prontuários quando a aba prontuário for ativada
   useEffect(() => {
     if (activeTab === 'prontuario' && patient && canViewRecords) {
@@ -272,6 +353,88 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
 
   const handleViewRecord = (recordId: string) => {
     router.push(`/records/${recordId}`)
+  }
+
+  // Buscar orçamentos do paciente
+  const fetchTreatmentPlans = useCallback(async () => {
+    try {
+      setLoadingTreatmentPlans(true)
+      setTreatmentPlansError(null)
+
+      const response = await fetch(`/api/treatment-plans?patientId=${id}`)
+      
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status} - ${response.statusText}`)
+      }
+
+      const data: TreatmentPlansApiResponse = await response.json()
+
+      if (data.success && data.data) {
+        setTreatmentPlans(data.data)
+      } else {
+        throw new Error(data.error || 'Erro desconhecido ao buscar orçamentos')
+      }
+    } catch (err) {
+      console.error('Erro ao buscar orçamentos:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar orçamentos'
+      setTreatmentPlansError(errorMessage)
+    } finally {
+      setLoadingTreatmentPlans(false)
+    }
+  }, [id])
+
+  // Carregar orçamentos quando a aba orçamentos for ativada
+  useEffect(() => {
+    if (activeTab === 'orcamentos' && patient) {
+      fetchTreatmentPlans()
+    }
+  }, [activeTab, patient, fetchTreatmentPlans])
+
+  const handleNewTreatmentPlan = () => {
+    setTreatmentPlanModalOpen(true)
+  }
+
+  const handleViewTreatmentPlan = (treatmentPlanId: string) => {
+    router.push(`/treatment-plans/${treatmentPlanId}`)
+  }
+
+  // Buscar pagamentos do paciente
+  const fetchPayments = useCallback(async () => {
+    try {
+      setLoadingPayments(true)
+      setPaymentsError(null)
+
+      const response = await fetch(`/api/payments?patientId=${id}`)
+      
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status} - ${response.statusText}`)
+      }
+
+      const data: PaymentsApiResponse = await response.json()
+
+      if (data.success && data.data) {
+        setPayments(data.data)
+      } else {
+        throw new Error(data.error || 'Erro desconhecido ao buscar pagamentos')
+      }
+    } catch (err) {
+      console.error('Erro ao buscar pagamentos:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar pagamentos'
+      setPaymentsError(errorMessage)
+    } finally {
+      setLoadingPayments(false)
+    }
+  }, [id])
+
+  // Carregar pagamentos quando a aba financeiro for ativada
+  useEffect(() => {
+    if (activeTab === 'financeiro' && patient && canViewFinance) {
+      fetchPayments()
+    }
+  }, [activeTab, patient, canViewFinance, fetchPayments])
+
+  const handleNewPayment = () => {
+    setPaymentModalOpen(true)
   }
 
   // Truncar descrição para exibição na lista
@@ -397,7 +560,8 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
   // Configurar abas baseado nas permissões do usuário
   const tabs = [
     { id: 'agenda', label: 'Agenda', icon: Calendar },
-    { id: 'orcamentos', label: 'Orçamentos', icon: DollarSign },
+    { id: 'orcamentos', label: 'Orçamentos', icon: Receipt },
+    ...(canViewFinance ? [{ id: 'financeiro', label: 'Financeiro', icon: DollarSign }] : []),
     ...(canViewRecords ? [{ id: 'prontuario', label: 'Prontuário', icon: FileText }] : []),
   ]
 
@@ -606,12 +770,218 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
             )}
 
             {activeTab === 'orcamentos' && (
-              <div className="text-center py-8">
-                <DollarSign className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Orçamentos</h3>
-                <p className="text-muted-foreground">
-                  Orçamentos serão implementados na Sprint 6
-                </p>
+              <div className="space-y-4">
+                {/* Header da aba Orçamentos */}
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Orçamentos</h3>
+                  <Button onClick={handleNewTreatmentPlan} size="sm" className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Novo Orçamento
+                  </Button>
+                </div>
+
+                {/* Lista de orçamentos */}
+                {loadingTreatmentPlans ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Carregando orçamentos...
+                    </div>
+                  </div>
+                ) : treatmentPlansError ? (
+                  <div className="text-center py-8">
+                    <div className="text-center">
+                      <h4 className="text-md font-semibold text-destructive mb-2">Erro ao carregar orçamentos</h4>
+                      <p className="text-muted-foreground mb-4">{treatmentPlansError}</p>
+                      <Button onClick={fetchTreatmentPlans} variant="outline" size="sm">
+                        Tentar novamente
+                      </Button>
+                    </div>
+                  </div>
+                ) : treatmentPlans.length === 0 ? (
+                  <div className="text-center py-8">
+                    <DollarSign className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h4 className="text-md font-semibold mb-2">Nenhum orçamento encontrado</h4>
+                    <p className="text-muted-foreground mb-4">
+                      Este paciente ainda não possui orçamentos
+                    </p>
+                    <Button onClick={handleNewTreatmentPlan} size="sm" className="flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      Criar Primeiro Orçamento
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Data</TableHead>
+                          <TableHead>Dentista</TableHead>
+                          <TableHead>Valor Total</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {treatmentPlans.map((plan) => (
+                          <TableRow key={plan.id}>
+                            <TableCell className="font-medium">
+                              {format(new Date(plan.createdAt), "dd/MM/yyyy", { locale: ptBR })}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{plan.dentist?.user.name || 'N/A'}</span>
+                                {plan.dentist?.cro && (
+                                  <span className="text-sm text-muted-foreground">
+                                    CRO: {plan.dentist.cro}
+                                  </span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              {plan.totalAmount.toLocaleString('pt-BR', { 
+                                style: 'currency', 
+                                currency: 'BRL' 
+                              })}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={
+                                plan.status === 'OPEN' ? 'default' :
+                                plan.status === 'APPROVED' ? 'success' : 'destructive'
+                              }>
+                                {plan.status === 'OPEN' ? 'Aberto' :
+                                 plan.status === 'APPROVED' ? 'Aprovado' : 'Rejeitado'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                onClick={() => handleViewTreatmentPlan(plan.id)}
+                                variant="outline"
+                                size="sm"
+                                className="flex items-center gap-2"
+                              >
+                                <Eye className="h-4 w-4" />
+                                Ver
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'financeiro' && canViewFinance && (
+              <div className="space-y-4">
+                {/* Header da aba Financeiro */}
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Histórico Financeiro</h3>
+                  <Button onClick={handleNewPayment} size="sm" className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Novo Pagamento
+                  </Button>
+                </div>
+
+                {/* Resumo do paciente */}
+                <Card className="bg-primary/5">
+                  <CardContent className="pt-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Total Pago pelo Paciente</p>
+                        <p className="text-2xl font-bold text-primary">
+                          {loadingPayments ? (
+                            <Loader2 className="h-6 w-6 animate-spin" />
+                          ) : (
+                            payments.reduce((sum, payment) => sum + payment.amount, 0).toLocaleString('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL'
+                            })
+                          )}
+                        </p>
+                      </div>
+                      <DollarSign className="h-8 w-8 text-primary/60" />
+                    </div>
+                    {!loadingPayments && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {payments.length} pagamento{payments.length !== 1 ? 's' : ''} registrado{payments.length !== 1 ? 's' : ''}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Lista de pagamentos */}
+                {loadingPayments ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Carregando pagamentos...
+                    </div>
+                  </div>
+                ) : paymentsError ? (
+                  <div className="text-center py-8">
+                    <div className="text-center">
+                      <h4 className="text-md font-semibold text-destructive mb-2">Erro ao carregar pagamentos</h4>
+                      <p className="text-muted-foreground mb-4">{paymentsError}</p>
+                      <Button onClick={fetchPayments} variant="outline" size="sm">
+                        Tentar novamente
+                      </Button>
+                    </div>
+                  </div>
+                ) : payments.length === 0 ? (
+                  <div className="text-center py-8">
+                    <DollarSign className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h4 className="text-md font-semibold mb-2">Nenhum pagamento registrado</h4>
+                    <p className="text-muted-foreground mb-4">
+                      Este paciente ainda não possui pagamentos registrados
+                    </p>
+                    <Button onClick={handleNewPayment} size="sm" className="flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      Registrar Primeiro Pagamento
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Data/Hora</TableHead>
+                          <TableHead>Valor</TableHead>
+                          <TableHead>Método</TableHead>
+                          <TableHead>Descrição</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {payments.map((payment) => (
+                          <TableRow key={payment.id}>
+                            <TableCell className="font-medium">
+                              {format(new Date(payment.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              {payment.amount.toLocaleString('pt-BR', {
+                                style: 'currency',
+                                currency: 'BRL'
+                              })}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={
+                                payment.method === 'CASH' ? 'success' :
+                                payment.method === 'PIX' ? 'default' : 'secondary'
+                              }>
+                                {payment.method === 'CASH' ? 'Dinheiro' :
+                                 payment.method === 'PIX' ? 'PIX' : 'Cartão'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {payment.description || '-'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </div>
             )}
 
@@ -726,6 +1096,28 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
           setRecordModalOpen(false)
           fetchRecords()
         }}
+      />
+
+      {/* Modal de novo orçamento */}
+      <TreatmentPlanFormModal
+        open={treatmentPlanModalOpen}
+        onOpenChange={setTreatmentPlanModalOpen}
+        onSuccess={() => {
+          setTreatmentPlanModalOpen(false)
+          fetchTreatmentPlans()
+        }}
+        patientId={id}
+      />
+
+      {/* Modal de novo pagamento */}
+      <PaymentFormModal
+        open={paymentModalOpen}
+        onOpenChange={setPaymentModalOpen}
+        onSuccess={() => {
+          setPaymentModalOpen(false)
+          fetchPayments()
+        }}
+        patientId={id}
       />
     </div>
   )
