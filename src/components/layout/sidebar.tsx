@@ -40,8 +40,18 @@ const mainMenuItems: MenuItem[] = [
     icon: DollarSign,
     requiredRoles: [UserRole.OWNER, UserRole.ADMIN]
   },
-  { href: '/inventory', label: 'Estoque', icon: Package },
-  { href: '/reports', label: 'Relatórios', icon: BarChart3 },
+  { 
+    href: '/inventory', 
+    label: 'Estoque', 
+    icon: Package,
+    requiredRoles: [UserRole.OWNER, UserRole.ADMIN, UserRole.RECEPTIONIST]
+  },
+  { 
+    href: '/reports', 
+    label: 'Relatórios', 
+    icon: BarChart3,
+    requiredRoles: [UserRole.OWNER, UserRole.ADMIN, UserRole.DENTIST]
+  },
 ]
 
 // Links de configurações (apenas OWNER e ADMIN)
