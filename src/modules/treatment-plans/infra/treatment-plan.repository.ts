@@ -316,6 +316,110 @@ export class TreatmentPlanRepository {
    * Atualiza um orçamento existente
    */
   async update(id: string, clinicId: string, data: UpdateTreatmentPlanInput): Promise<TreatmentPlanOutput | null> {
+    // Se houver itens para atualizar, usar transação para substituir todos os itens
+    if (data.items !== undefined) {
+      return await prisma.$transaction(async (tx) => {
+        // Verificar se o plano existe e pertence à clínica
+        const existingPlan = await tx.treatmentPlan.findFirst({
+          where: {
+            id,
+            clinicId
+          }
+        })
+
+        if (!existingPlan) {
+          throw new Error('Orçamento não encontrado')
+        }
+
+        // Preparar dados de atualização
+        const updateData: any = {}
+
+        if (data.status !== undefined) {
+          updateData.status = data.status
+        }
+
+        if (data.notes !== undefined) {
+          updateData.notes = data.notes || null
+        }
+
+        // Calcular novo total baseado nos itens fornecidos
+        const newTotal = calculateTotalAmount(data.items)
+        updateData.totalAmount = newTotal
+
+        // Deletar todos os itens existentes
+        await tx.treatmentItem.deleteMany({
+          where: { planId: id }
+        })
+
+        // Criar novos itens
+        if (data.items.length > 0) {
+          await tx.treatmentItem.createMany({
+            data: data.items.map(item => ({
+              planId: id,
+              description: item.description,
+              tooth: item.tooth || null,
+              value: item.value,
+              quantity: item.quantity,
+            }))
+          })
+        }
+
+        // Atualizar o plano
+        const treatmentPlan = await tx.treatmentPlan.update({
+          where: {
+            id,
+            clinicId
+          },
+          data: updateData,
+          select: {
+            id: true,
+            clinicId: true,
+            patientId: true,
+            dentistId: true,
+            status: true,
+            totalAmount: true,
+            notes: true,
+            createdAt: true,
+            updatedAt: true,
+            items: {
+              select: {
+                id: true,
+                planId: true,
+                description: true,
+                tooth: true,
+                value: true,
+                quantity: true,
+              },
+              orderBy: {
+                description: 'asc'
+              }
+            }
+          }
+        })
+
+        return {
+          id: treatmentPlan.id,
+          clinicId: treatmentPlan.clinicId,
+          patientId: treatmentPlan.patientId,
+          dentistId: treatmentPlan.dentistId,
+          status: treatmentPlan.status as any,
+          totalAmount: Number(treatmentPlan.totalAmount),
+          notes: treatmentPlan.notes,
+          createdAt: treatmentPlan.createdAt,
+          updatedAt: treatmentPlan.updatedAt,
+          items: treatmentPlan.items.map(item => ({
+            id: item.id,
+            planId: item.planId,
+            description: item.description,
+            tooth: item.tooth,
+            value: Number(item.value),
+            quantity: item.quantity,
+          }))
+        }
+      })
+    }
+
+    // Caso contrário, atualização simples sem itens
     const updateData: any = {}
 
     if (data.status !== undefined) {

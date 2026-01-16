@@ -8,7 +8,7 @@ import { getPatient, updatePatient } from '@/modules/patients/application'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verificar autenticação
@@ -20,13 +20,23 @@ export async function GET(
       )
     }
 
-    const patientId = params.id
+    // Aguardar parâmetros
+    const resolvedParams = await params
+    const patientId = resolvedParams.id
+    console.log('🔥 API DEBUG - URL da requisição:', request.url) // Debug
+    console.log('🔥 API DEBUG - Params resolvidos:', resolvedParams) // Debug
+    console.log('🔥 API DEBUG - ID do paciente:', patientId) // Debug
+    console.log('🔥 API DEBUG - Clinic ID da sessão:', session.user.clinicId) // Debug
 
     // Chamar use case
     const result = await getPatient({
       id: patientId,
       clinicId: session.user.clinicId
     })
+
+    console.log('🔥 API DEBUG - Sucesso do use case:', result.success) // Debug
+    console.log('🔥 API DEBUG - Dados retornados:', result.data) // Debug
+    console.log('🔥 API DEBUG - Nome do paciente:', result.data?.name) // Debug
 
     if (!result.success) {
       return NextResponse.json(result, { status: 500 })
@@ -59,7 +69,7 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verificar autenticação
@@ -71,7 +81,9 @@ export async function PATCH(
       )
     }
 
-    const patientId = params.id
+    // Aguardar parâmetros
+    const resolvedParams = await params
+    const patientId = resolvedParams.id
 
     // Ler e validar body
     let body

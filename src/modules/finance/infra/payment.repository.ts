@@ -80,6 +80,18 @@ export class PaymentRepository {
             email: true,
             phone: true,
           }
+        },
+        paymentTreatmentPlans: {
+          select: {
+            treatmentPlan: {
+              select: {
+                id: true,
+                status: true,
+                totalAmount: true,
+                notes: true,
+              }
+            }
+          }
         }
       },
       orderBy: {
@@ -95,7 +107,13 @@ export class PaymentRepository {
       method: payment.method as PaymentMethod,
       description: payment.description,
       createdAt: payment.createdAt,
-      patient: payment.patient
+      patient: payment.patient,
+      treatmentPlans: payment.paymentTreatmentPlans.map(ptp => ({
+        id: ptp.treatmentPlan.id,
+        status: ptp.treatmentPlan.status,
+        totalAmount: Number(ptp.treatmentPlan.totalAmount),
+        notes: ptp.treatmentPlan.notes,
+      }))
     }))
   }
 
@@ -123,6 +141,18 @@ export class PaymentRepository {
             email: true,
             phone: true,
           }
+        },
+        paymentTreatmentPlans: {
+          select: {
+            treatmentPlan: {
+              select: {
+                id: true,
+                status: true,
+                totalAmount: true,
+                notes: true,
+              }
+            }
+          }
         }
       }
     })
@@ -139,7 +169,13 @@ export class PaymentRepository {
       method: payment.method as PaymentMethod,
       description: payment.description,
       createdAt: payment.createdAt,
-      patient: payment.patient
+      patient: payment.patient,
+      treatmentPlans: payment.paymentTreatmentPlans.map(ptp => ({
+        id: ptp.treatmentPlan.id,
+        status: ptp.treatmentPlan.status,
+        totalAmount: Number(ptp.treatmentPlan.totalAmount),
+        notes: ptp.treatmentPlan.notes,
+      }))
     }
   }
 
@@ -147,6 +183,89 @@ export class PaymentRepository {
    * Cria um novo pagamento
    */
   async create(clinicId: string, data: CreatePaymentInput): Promise<PaymentOutput> {
+    // Se há treatment plans, usar transação para criar payment e relações
+    if (data.treatmentPlanIds && data.treatmentPlanIds.length > 0) {
+      return await prisma.$transaction(async (tx) => {
+        // Criar o pagamento
+        const payment = await tx.payment.create({
+          data: {
+            clinicId,
+            patientId: data.patientId || null,
+            amount: data.amount,
+            method: data.method,
+            description: data.description || null,
+          },
+          select: {
+            id: true,
+            clinicId: true,
+            patientId: true,
+            amount: true,
+            method: true,
+            description: true,
+            createdAt: true,
+            patient: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                phone: true,
+              }
+            }
+          }
+        })
+
+        // Criar as relações payment-treatmentPlan
+        await tx.paymentTreatmentPlan.createMany({
+          data: data.treatmentPlanIds.map(treatmentPlanId => ({
+            paymentId: payment.id,
+            treatmentPlanId,
+          }))
+        })
+
+        // Atualizar status dos treatment plans de OPEN para APPROVED
+        await tx.treatmentPlan.updateMany({
+          where: {
+            id: { in: data.treatmentPlanIds },
+            status: 'OPEN'
+          },
+          data: {
+            status: 'APPROVED'
+          }
+        })
+
+        // Buscar os treatment plans para incluir no retorno
+        const treatmentPlans = await tx.treatmentPlan.findMany({
+          where: {
+            id: { in: data.treatmentPlanIds }
+          },
+          select: {
+            id: true,
+            status: true,
+            totalAmount: true,
+            notes: true,
+          }
+        })
+
+        return {
+          id: payment.id,
+          clinicId: payment.clinicId,
+          patientId: payment.patientId,
+          amount: Number(payment.amount),
+          method: payment.method as PaymentMethod,
+          description: payment.description,
+          createdAt: payment.createdAt,
+          patient: payment.patient,
+          treatmentPlans: treatmentPlans.map(tp => ({
+            id: tp.id,
+            status: tp.status,
+            totalAmount: Number(tp.totalAmount),
+            notes: tp.notes,
+          }))
+        }
+      })
+    }
+
+    // Caso não há treatment plans, criar apenas o pagamento
     const payment = await prisma.payment.create({
       data: {
         clinicId,
@@ -182,7 +301,8 @@ export class PaymentRepository {
       method: payment.method as PaymentMethod,
       description: payment.description,
       createdAt: payment.createdAt,
-      patient: payment.patient
+      patient: payment.patient,
+      treatmentPlans: []
     }
   }
 
@@ -390,6 +510,18 @@ export class PaymentRepository {
             email: true,
             phone: true,
           }
+        },
+        paymentTreatmentPlans: {
+          select: {
+            treatmentPlan: {
+              select: {
+                id: true,
+                status: true,
+                totalAmount: true,
+                notes: true,
+              }
+            }
+          }
         }
       },
       orderBy: {
@@ -406,7 +538,13 @@ export class PaymentRepository {
       method: payment.method as PaymentMethod,
       description: payment.description,
       createdAt: payment.createdAt,
-      patient: payment.patient
+      patient: payment.patient,
+      treatmentPlans: payment.paymentTreatmentPlans.map(ptp => ({
+        id: ptp.treatmentPlan.id,
+        status: ptp.treatmentPlan.status,
+        totalAmount: Number(ptp.treatmentPlan.totalAmount),
+        notes: ptp.treatmentPlan.notes,
+      }))
     }))
   }
 

@@ -97,9 +97,10 @@ export function Odontogram({ data, onChange, readOnly = true }: OdontogramProps)
       </div>
 
       {/* Odontogram */}
-      <div className="border-2 border-gray-300 rounded-lg p-4 bg-white">
-        {/* Upper Arch */}
-        <div className="mb-4">
+      <div className="border-2 border-gray-300 rounded-lg p-4 bg-white overflow-x-auto">
+        <div className="min-w-[600px]">
+          {/* Upper Arch */}
+          <div className="mb-4">
           <div className="text-center text-xs text-gray-500 mb-2">Arcada Superior</div>
           <div className="flex justify-center gap-1">
             {/* Upper Right Quadrant */}
@@ -145,6 +146,7 @@ export function Odontogram({ data, onChange, readOnly = true }: OdontogramProps)
             </div>
           </div>
           <div className="text-center text-xs text-gray-500 mt-2">Arcada Inferior</div>
+        </div>
         </div>
       </div>
 

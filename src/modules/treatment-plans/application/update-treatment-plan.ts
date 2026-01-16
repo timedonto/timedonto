@@ -65,6 +65,14 @@ export async function updateTreatmentPlan(params: UpdateTreatmentPlanParams): Pr
       }
     }
 
+    // Regra de negócio: Não é possível editar itens de orçamentos já aprovados ou rejeitados
+    if (validatedData.items !== undefined && existingTreatmentPlan.status !== 'OPEN') {
+      return {
+        success: false,
+        error: `Não é possível editar os itens de um orçamento ${existingTreatmentPlan.status === 'APPROVED' ? 'aprovado' : 'rejeitado'}. Apenas orçamentos em aberto podem ser editados.`
+      }
+    }
+
     // Atualizar orçamento
     const updatedTreatmentPlan = await treatmentPlanRepository.update(id, clinicId, validatedData)
 

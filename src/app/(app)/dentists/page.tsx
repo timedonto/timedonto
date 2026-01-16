@@ -173,15 +173,16 @@ export default function DentistsPage() {
       {/* Header da página */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dentistas</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Dentistas</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Gerencie os dentistas da clínica
           </p>
         </div>
         {canEdit && (
           <Button onClick={handleCreateDentist} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
-            Novo Dentista
+            <span className="hidden sm:inline">Novo Dentista</span>
+            <span className="sm:hidden">Novo</span>
           </Button>
         )}
       </div>
@@ -193,26 +194,26 @@ export default function DentistsPage() {
           <div className="flex items-center justify-center py-12">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Carregando dentistas...
+              <span className="text-sm sm:text-base">Carregando dentistas...</span>
             </div>
           </div>
         ) : error ? (
           // Estado de erro
-          <div className="flex flex-col items-center justify-center py-12 space-y-4">
+          <div className="flex flex-col items-center justify-center py-12 space-y-4 px-4">
             <div className="text-center">
-              <h3 className="text-lg font-semibold">Erro ao carregar dentistas</h3>
-              <p className="text-muted-foreground">{error}</p>
+              <h3 className="text-base sm:text-lg font-semibold">Erro ao carregar dentistas</h3>
+              <p className="text-sm sm:text-base text-muted-foreground">{error}</p>
             </div>
-            <Button onClick={fetchDentists} variant="outline">
+            <Button onClick={fetchDentists} variant="outline" size="sm">
               Tentar novamente
             </Button>
           </div>
         ) : dentists.length === 0 ? (
           // Estado vazio
-          <div className="flex flex-col items-center justify-center py-12 space-y-4">
+          <div className="flex flex-col items-center justify-center py-12 space-y-4 px-4">
             <div className="text-center">
-              <h3 className="text-lg font-semibold">Nenhum dentista encontrado</h3>
-              <p className="text-muted-foreground">
+              <h3 className="text-base sm:text-lg font-semibold">Nenhum dentista encontrado</h3>
+              <p className="text-sm sm:text-base text-muted-foreground">
                 {canEdit 
                   ? 'Comece cadastrando o primeiro dentista da clínica'
                   : 'Não há dentistas cadastrados na clínica'
@@ -220,67 +221,71 @@ export default function DentistsPage() {
               </p>
             </div>
             {canEdit && (
-              <Button onClick={handleCreateDentist} className="flex items-center gap-2">
+              <Button onClick={handleCreateDentist} className="flex items-center gap-2" size="sm">
                 <Plus className="h-4 w-4" />
-                Cadastrar Primeiro Dentista
+                <span className="hidden sm:inline">Cadastrar Primeiro Dentista</span>
+                <span className="sm:hidden">Cadastrar Dentista</span>
               </Button>
             )}
           </div>
         ) : (
-          // Tabela de dentistas
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>CRO</TableHead>
-                <TableHead>Especialidade</TableHead>
-                <TableHead>Comissão</TableHead>
-                <TableHead>Status</TableHead>
-                {canEdit && <TableHead className="text-right">Ações</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <>
+            {/* Layout Mobile - Cards */}
+            <div className="md:hidden space-y-4 p-4">
               {dentists.map((dentist) => (
-                <TableRow key={dentist.id}>
-                  <TableCell className="font-medium">
-                    {dentist.user.name}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {dentist.user.email}
-                  </TableCell>
-                  <TableCell>
-                    <code className="text-sm bg-muted px-2 py-1 rounded">
-                      {dentist.cro}
-                    </code>
-                  </TableCell>
-                  <TableCell>
-                    {dentist.specialty || (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm">
-                      {formatCommission(dentist.commission)}
-                    </span>
-                  </TableCell>
-                  <TableCell>
+                <div 
+                  key={dentist.id}
+                  className="border rounded-lg p-4 space-y-3"
+                >
+                  {/* Nome e Status */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-medium">{dentist.user.name}</div>
+                      <div className="text-xs text-muted-foreground">{dentist.user.email}</div>
+                    </div>
                     <Badge 
                       variant={dentist.user.isActive ? 'success' : 'destructive'}
+                      className="text-xs"
                     >
                       {dentist.user.isActive ? 'Ativo' : 'Inativo'}
                     </Badge>
-                  </TableCell>
-                  {canEdit && (
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
+                  </div>
+
+                  {/* CRO e Especialidade */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-xs text-muted-foreground mb-1">CRO</div>
+                      <code className="text-xs bg-muted px-2 py-1 rounded">
+                        {dentist.cro}
+                      </code>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground mb-1">Especialidade</div>
+                      <div className="text-xs">
+                        {dentist.specialty || (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Comissão e Ações */}
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <div>
+                      <div className="text-xs text-muted-foreground">Comissão</div>
+                      <div className="text-xs font-medium">
+                        {formatCommission(dentist.commission)}
+                      </div>
+                    </div>
+                    {canEdit && (
+                      <div className="flex items-center gap-2">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleEditDentist(dentist.id)}
                           className="h-8 w-8 p-0"
                         >
-                          <Pencil className="h-4 w-4" />
+                          <Pencil className="h-3 w-3" />
                           <span className="sr-only">Editar dentista</span>
                         </Button>
                         <Button
@@ -289,16 +294,92 @@ export default function DentistsPage() {
                           onClick={() => handleDeleteDentist(dentist.id, dentist.user.name)}
                           className="h-8 w-8 p-0"
                         >
-                          <Trash2 className="h-4 w-4 text-destructive" />
+                          <Trash2 className="h-3 w-3 text-destructive" />
                           <span className="sr-only">Excluir dentista</span>
                         </Button>
                       </div>
-                    </TableCell>
-                  )}
-                </TableRow>
+                    )}
+                  </div>
+                </div>
               ))}
-            </TableBody>
-          </Table>
+            </div>
+
+            {/* Layout Desktop/Tablet - Tabela */}
+            <div className="hidden md:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs lg:text-sm">Nome</TableHead>
+                    <TableHead className="text-xs lg:text-sm">Email</TableHead>
+                    <TableHead className="text-xs lg:text-sm">CRO</TableHead>
+                    <TableHead className="text-xs lg:text-sm hidden lg:table-cell">Especialidade</TableHead>
+                    <TableHead className="text-xs lg:text-sm hidden lg:table-cell">Comissão</TableHead>
+                    <TableHead className="text-xs lg:text-sm">Status</TableHead>
+                    {canEdit && <TableHead className="text-xs lg:text-sm text-right">Ações</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {dentists.map((dentist) => (
+                    <TableRow key={dentist.id}>
+                      <TableCell className="font-medium text-xs lg:text-sm">
+                        {dentist.user.name}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs lg:text-sm">
+                        {dentist.user.email}
+                      </TableCell>
+                      <TableCell>
+                        <code className="text-xs bg-muted px-2 py-1 rounded">
+                          {dentist.cro}
+                        </code>
+                      </TableCell>
+                      <TableCell className="text-xs lg:text-sm hidden lg:table-cell">
+                        {dentist.specialty || (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs lg:text-sm hidden lg:table-cell">
+                        <span>
+                          {formatCommission(dentist.commission)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={dentist.user.isActive ? 'success' : 'destructive'}
+                          className="text-xs"
+                        >
+                          {dentist.user.isActive ? 'Ativo' : 'Inativo'}
+                        </Badge>
+                      </TableCell>
+                      {canEdit && (
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditDentist(dentist.id)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Pencil className="h-4 w-4" />
+                              <span className="sr-only">Editar dentista</span>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteDentist(dentist.id, dentist.user.name)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                              <span className="sr-only">Excluir dentista</span>
+                            </Button>
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </div>
 

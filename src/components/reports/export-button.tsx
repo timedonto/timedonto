@@ -59,14 +59,16 @@ export function ExportButton({
       size={size}
       onClick={handleExport}
       disabled={disabled || isExporting || data.length === 0}
-      className={cn("flex items-center gap-2", className)}
+      className={cn("flex items-center gap-1 sm:gap-2", className)}
     >
       {isExporting ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
+        <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
       ) : (
-        <Download className="h-4 w-4" />
+        <Download className="h-3 w-3 sm:h-4 sm:w-4" />
       )}
-      {isExporting ? 'Exportando...' : 'Exportar CSV'}
+      <span className="text-xs sm:text-sm">
+        {isExporting ? 'Exportando...' : 'Exportar CSV'}
+      </span>
     </Button>
   )
 }

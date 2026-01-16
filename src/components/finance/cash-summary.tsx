@@ -211,32 +211,34 @@ export function CashSummary({ clinicId }: CashSummaryProps) {
   return (
     <div className="space-y-4">
       {/* Controles */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h3 className="text-lg font-semibold">Resumo de Caixa</h3>
-          <span className="text-sm text-muted-foreground">({getPeriodTitle()})</span>
+      <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
+        <div className="flex flex-col space-y-1 sm:flex-row sm:items-center sm:space-y-0 sm:gap-2">
+          <h3 className="text-base sm:text-lg font-semibold">Resumo de Caixa</h3>
+          <span className="text-xs sm:text-sm text-muted-foreground">({getPeriodTitle()})</span>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:space-y-0 sm:gap-2">
           {/* Toggle Diário/Mensal */}
           <div className="flex rounded-md border">
             <Button
               variant={viewType === 'daily' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setViewType('daily')}
-              className="rounded-r-none"
+              className="rounded-r-none text-xs sm:text-sm"
             >
-              <Calendar className="h-4 w-4 mr-1" />
-              Diário
+              <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+              <span className="hidden sm:inline">Diário</span>
+              <span className="sm:hidden">Dia</span>
             </Button>
             <Button
               variant={viewType === 'monthly' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setViewType('monthly')}
-              className="rounded-l-none"
+              className="rounded-l-none text-xs sm:text-sm"
             >
-              <CalendarDays className="h-4 w-4 mr-1" />
-              Mensal
+              <CalendarDays className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+              <span className="hidden sm:inline">Mensal</span>
+              <span className="sm:hidden">Mês</span>
             </Button>
           </div>
 
@@ -246,7 +248,7 @@ export function CashSummary({ clinicId }: CashSummaryProps) {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-40"
+              className="w-full sm:w-40 text-xs sm:text-sm"
             />
           ) : (
             <div className="flex gap-2">
@@ -254,7 +256,7 @@ export function CashSummary({ clinicId }: CashSummaryProps) {
                 value={selectedMonth.toString()} 
                 onValueChange={(value) => setSelectedMonth(parseInt(value))}
               >
-                <SelectTrigger className="w-32">
+                <SelectTrigger className="w-full sm:w-32 text-xs sm:text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -270,7 +272,7 @@ export function CashSummary({ clinicId }: CashSummaryProps) {
                 value={selectedYear.toString()} 
                 onValueChange={(value) => setSelectedYear(parseInt(value))}
               >
-                <SelectTrigger className="w-20">
+                <SelectTrigger className="w-20 text-xs sm:text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -287,21 +289,21 @@ export function CashSummary({ clinicId }: CashSummaryProps) {
       </div>
 
       {/* Cards de Resumo */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         {/* Total Geral */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-xs sm:text-sm font-medium">
               Total {viewType === 'daily' ? 'do Dia' : 'do Mês'}
             </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-lg sm:text-2xl font-bold">
               {loading ? (
-                <Loader2 className="h-6 w-6 animate-spin" />
+                <Loader2 className="h-4 w-4 sm:h-6 sm:w-6 animate-spin" />
               ) : error ? (
-                <span className="text-destructive text-sm">Erro</span>
+                <span className="text-destructive text-xs sm:text-sm">Erro</span>
               ) : (
                 formatCurrency(summary?.totalAmount || 0)
               )}
@@ -315,21 +317,22 @@ export function CashSummary({ clinicId }: CashSummaryProps) {
         {/* Dinheiro */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Dinheiro</CardTitle>
-            <Banknote className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium">Dinheiro</CardTitle>
+            <Banknote className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-lg sm:text-2xl font-bold">
               {loading ? (
-                <Loader2 className="h-6 w-6 animate-spin" />
+                <Loader2 className="h-4 w-4 sm:h-6 sm:w-6 animate-spin" />
               ) : error ? (
-                <span className="text-destructive text-sm">Erro</span>
+                <span className="text-destructive text-xs sm:text-sm">Erro</span>
               ) : (
                 formatCurrency(getMethodTotal('CASH'))
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Pagamentos em dinheiro
+              <span className="hidden sm:inline">Pagamentos em dinheiro</span>
+              <span className="sm:hidden">Dinheiro</span>
             </p>
           </CardContent>
         </Card>
@@ -337,21 +340,22 @@ export function CashSummary({ clinicId }: CashSummaryProps) {
         {/* PIX */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">PIX</CardTitle>
-            <QrCode className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium">PIX</CardTitle>
+            <QrCode className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-lg sm:text-2xl font-bold">
               {loading ? (
-                <Loader2 className="h-6 w-6 animate-spin" />
+                <Loader2 className="h-4 w-4 sm:h-6 sm:w-6 animate-spin" />
               ) : error ? (
-                <span className="text-destructive text-sm">Erro</span>
+                <span className="text-destructive text-xs sm:text-sm">Erro</span>
               ) : (
                 formatCurrency(getMethodTotal('PIX'))
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Pagamentos via PIX
+              <span className="hidden sm:inline">Pagamentos via PIX</span>
+              <span className="sm:hidden">PIX</span>
             </p>
           </CardContent>
         </Card>
@@ -359,21 +363,22 @@ export function CashSummary({ clinicId }: CashSummaryProps) {
         {/* Cartão */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Cartão</CardTitle>
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium">Cartão</CardTitle>
+            <CreditCard className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-lg sm:text-2xl font-bold">
               {loading ? (
-                <Loader2 className="h-6 w-6 animate-spin" />
+                <Loader2 className="h-4 w-4 sm:h-6 sm:w-6 animate-spin" />
               ) : error ? (
-                <span className="text-destructive text-sm">Erro</span>
+                <span className="text-destructive text-xs sm:text-sm">Erro</span>
               ) : (
                 formatCurrency(getMethodTotal('CARD'))
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Pagamentos no cartão
+              <span className="hidden sm:inline">Pagamentos no cartão</span>
+              <span className="sm:hidden">Cartão</span>
             </p>
           </CardContent>
         </Card>
@@ -382,12 +387,12 @@ export function CashSummary({ clinicId }: CashSummaryProps) {
       {/* Mensagem de erro */}
       {error && (
         <div className="rounded-md bg-destructive/10 p-3">
-          <p className="text-sm text-destructive">{error}</p>
+          <p className="text-xs sm:text-sm text-destructive">{error}</p>
           <Button 
             variant="outline" 
             size="sm" 
             onClick={fetchSummary}
-            className="mt-2"
+            className="mt-2 w-full sm:w-auto"
           >
             Tentar novamente
           </Button>

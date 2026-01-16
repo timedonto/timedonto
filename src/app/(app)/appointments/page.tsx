@@ -260,14 +260,15 @@ export default function AppointmentsPage() {
       {/* Header da página */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Agenda</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Agenda</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Gerencie os agendamentos da clínica
           </p>
         </div>
         <Button onClick={handleCreateAppointment} className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
-          Novo Agendamento
+          <span className="hidden sm:inline">Novo Agendamento</span>
+          <span className="sm:hidden">Novo</span>
         </Button>
       </div>
 
@@ -288,12 +289,12 @@ export default function AppointmentsPage() {
           )}
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="flex flex-col sm:flex-row gap-4">
           {/* Filtro por Dentista */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Dentista</label>
+          <div className="flex-1 space-y-2">
+            <label className="text-xs sm:text-sm font-medium">Dentista</label>
             <Select value={selectedDentist} onValueChange={setSelectedDentist}>
-              <SelectTrigger>
+              <SelectTrigger className="text-xs sm:text-sm">
                 <SelectValue placeholder="Todos os dentistas" />
               </SelectTrigger>
               <SelectContent>
@@ -308,21 +309,21 @@ export default function AppointmentsPage() {
           </div>
 
           {/* Filtro por Data */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Data</label>
+          <div className="flex-1 space-y-2">
+            <label className="text-xs sm:text-sm font-medium">Data</label>
             <Input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full"
+              className="w-full text-xs sm:text-sm"
             />
           </div>
 
           {/* Filtro por Status */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Status</label>
+          <div className="flex-1 space-y-2">
+            <label className="text-xs sm:text-sm font-medium">Status</label>
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger>
+              <SelectTrigger className="text-xs sm:text-sm">
                 <SelectValue placeholder="Todos os status" />
               </SelectTrigger>
               <SelectContent>
@@ -346,29 +347,29 @@ export default function AppointmentsPage() {
           <div className="flex items-center justify-center py-12">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Carregando agendamentos...
+              <span className="text-sm sm:text-base">Carregando agendamentos...</span>
             </div>
           </div>
         ) : error ? (
           // Estado de erro
-          <div className="flex flex-col items-center justify-center py-12 space-y-4">
+          <div className="flex flex-col items-center justify-center py-12 space-y-4 px-4">
             <div className="text-center">
-              <h3 className="text-lg font-semibold">Erro ao carregar agendamentos</h3>
-              <p className="text-muted-foreground">{error}</p>
+              <h3 className="text-base sm:text-lg font-semibold">Erro ao carregar agendamentos</h3>
+              <p className="text-sm sm:text-base text-muted-foreground">{error}</p>
             </div>
-            <Button onClick={fetchAppointments} variant="outline">
+            <Button onClick={fetchAppointments} variant="outline" size="sm">
               Tentar novamente
             </Button>
           </div>
         ) : appointments.length === 0 ? (
           // Estado vazio
-          <div className="flex flex-col items-center justify-center py-12 space-y-4">
+          <div className="flex flex-col items-center justify-center py-12 space-y-4 px-4">
             <div className="text-center">
-              <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold">
+              <Calendar className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-base sm:text-lg font-semibold">
                 {hasActiveFilters ? 'Nenhum agendamento encontrado' : 'Nenhum agendamento cadastrado'}
               </h3>
-              <p className="text-muted-foreground">
+              <p className="text-sm sm:text-base text-muted-foreground">
                 {hasActiveFilters 
                   ? 'Tente ajustar os filtros para encontrar agendamentos'
                   : 'Comece criando o primeiro agendamento da clínica'
@@ -376,89 +377,157 @@ export default function AppointmentsPage() {
               </p>
             </div>
             {!hasActiveFilters && (
-              <Button onClick={handleCreateAppointment} className="flex items-center gap-2">
+              <Button onClick={handleCreateAppointment} className="flex items-center gap-2" size="sm">
                 <Plus className="h-4 w-4" />
-                Criar Primeiro Agendamento
+                <span className="hidden sm:inline">Criar Primeiro Agendamento</span>
+                <span className="sm:hidden">Criar Agendamento</span>
               </Button>
             )}
           </div>
         ) : (
-          // Tabela de agendamentos
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data/Hora</TableHead>
-                <TableHead>Paciente</TableHead>
-                <TableHead>Dentista</TableHead>
-                <TableHead>Procedimento</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <>
+            {/* Layout Mobile - Cards */}
+            <div className="md:hidden space-y-4 p-4">
               {appointments.map((appointment) => (
-                <TableRow 
+                <div 
                   key={appointment.id}
-                  className="cursor-pointer hover:bg-muted/50"
+                  className="border rounded-lg p-4 space-y-3 cursor-pointer hover:bg-muted/50 transition-colors"
                   onClick={() => handleAppointmentClick(appointment.id)}
                 >
-                  <TableCell className="font-medium">
-                    <div className="flex flex-col">
-                      <span>
-                        {format(appointment.date, "dd/MM/yyyy", { locale: ptBR })}
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        {format(appointment.date, "HH:mm", { locale: ptBR })} 
-                        ({appointment.durationMinutes}min)
-                      </span>
+                  {/* Horário e Data */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-medium">
+                        {format(appointment.date, "HH:mm", { locale: ptBR })}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {format(appointment.date, "dd/MM/yyyy", { locale: ptBR })} • {appointment.durationMinutes}min
+                      </div>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-medium">{appointment.patient.name}</span>
-                      {appointment.patient.phone && (
-                        <span className="text-sm text-muted-foreground">
-                          {appointment.patient.phone}
-                        </span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-medium">{appointment.dentist.user.name}</span>
-                      <span className="text-sm text-muted-foreground">
-                        {appointment.dentist.cro}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {appointment.procedure || '-'}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusBadgeVariant(appointment.status)}>
+                    <Badge variant={getStatusBadgeVariant(appointment.status)} className="text-xs">
                       {getStatusLabel(appointment.status)}
                     </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleEditAppointment(appointment.id)
-                        }}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Pencil className="h-4 w-4" />
-                        <span className="sr-only">Editar agendamento</span>
-                      </Button>
+                  </div>
+
+                  {/* Paciente */}
+                  <div>
+                    <div className="text-sm font-medium">{appointment.patient.name}</div>
+                    {appointment.patient.phone && (
+                      <div className="text-xs text-muted-foreground">{appointment.patient.phone}</div>
+                    )}
+                  </div>
+
+                  {/* Dentista */}
+                  <div>
+                    <div className="text-sm text-muted-foreground">
+                      Dr(a). {appointment.dentist.user.name}
                     </div>
-                  </TableCell>
-                </TableRow>
+                    <div className="text-xs text-muted-foreground">
+                      CRO: {appointment.dentist.cro}
+                    </div>
+                  </div>
+
+                  {/* Procedimento e Ação */}
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <div className="text-xs text-muted-foreground">
+                      {appointment.procedure || 'Sem procedimento definido'}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleEditAppointment(appointment.id)
+                      }}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Pencil className="h-3 w-3" />
+                      <span className="sr-only">Editar agendamento</span>
+                    </Button>
+                  </div>
+                </div>
               ))}
-            </TableBody>
-          </Table>
+            </div>
+
+            {/* Layout Desktop/Tablet - Tabela */}
+            <div className="hidden md:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs lg:text-sm">Data/Hora</TableHead>
+                    <TableHead className="text-xs lg:text-sm">Paciente</TableHead>
+                    <TableHead className="text-xs lg:text-sm">Dentista</TableHead>
+                    <TableHead className="text-xs lg:text-sm hidden lg:table-cell">Procedimento</TableHead>
+                    <TableHead className="text-xs lg:text-sm">Status</TableHead>
+                    <TableHead className="text-xs lg:text-sm text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {appointments.map((appointment) => (
+                    <TableRow 
+                      key={appointment.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => handleAppointmentClick(appointment.id)}
+                    >
+                      <TableCell className="font-medium">
+                        <div className="flex flex-col">
+                          <span className="text-xs lg:text-sm">
+                            {format(appointment.date, "dd/MM/yyyy", { locale: ptBR })}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {format(appointment.date, "HH:mm", { locale: ptBR })} 
+                            ({appointment.durationMinutes}min)
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-medium text-xs lg:text-sm">{appointment.patient.name}</span>
+                          {appointment.patient.phone && (
+                            <span className="text-xs text-muted-foreground">
+                              {appointment.patient.phone}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-medium text-xs lg:text-sm">{appointment.dentist.user.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {appointment.dentist.cro}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs lg:text-sm hidden lg:table-cell">
+                        {appointment.procedure || '-'}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusBadgeVariant(appointment.status)} className="text-xs">
+                          {getStatusLabel(appointment.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleEditAppointment(appointment.id)
+                            }}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Pencil className="h-4 w-4" />
+                            <span className="sr-only">Editar agendamento</span>
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </div>
 

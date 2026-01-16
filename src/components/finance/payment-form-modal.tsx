@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { Loader2, DollarSign } from 'lucide-react'
+import { Loader2, DollarSign, FileText, Check } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -27,6 +27,31 @@ interface Patient {
   phone: string | null
 }
 
+interface TreatmentPlan {
+  id: string
+  status: 'OPEN' | 'APPROVED' | 'REJECTED'
+  totalAmount: number
+  notes: string | null
+  createdAt: string
+  patient: {
+    id: string
+    name: string
+  }
+  dentist: {
+    id: string
+    user: {
+      name: string
+    }
+  }
+  items: Array<{
+    id: string
+    description: string
+    tooth: string | null
+    value: number
+    quantity: number
+  }>
+}
+
 type PaymentMethod = 'CASH' | 'PIX' | 'CARD'
 
 interface PaymentFormModalProps {
@@ -49,9 +74,11 @@ export function PaymentFormModal({ open, onOpenChange, onSuccess, patientId }: P
   
   // Dados dos selects
   const [patients, setPatients] = useState<Patient[]>([])
+  const [treatmentPlans, setTreatmentPlans] = useState<TreatmentPlan[]>([])
   
   // Dados do formulário
   const [selectedPatientId, setSelectedPatientId] = useState('none')
+  const [selectedTreatmentPlanIds, setSelectedTreatmentPlanIds] = useState<string[]>([])
   const [amount, setAmount] = useState('')
   const [method, setMethod] = useState<PaymentMethod | ''>('')
   const [description, setDescription] = useState('')
@@ -79,6 +106,44 @@ export function PaymentFormModal({ open, onOpenChange, onSuccess, patientId }: P
     }
   }
 
+  // Carregar orçamentos do paciente
+  const loadTreatmentPlans = async (patientId: string) => {
+    try {
+      setLoadingData(true)
+      setError(null)
+
+      // Fazer duas requisições para buscar orçamentos OPEN e APPROVED
+      const [openResponse, approvedResponse] = await Promise.all([
+        fetch(`/api/treatment-plans?patientId=${patientId}&status=OPEN`),
+        fetch(`/api/treatment-plans?patientId=${patientId}&status=APPROVED`)
+      ])
+
+      const [openData, approvedData] = await Promise.all([
+        openResponse.json(),
+        approvedResponse.json()
+      ])
+
+      if (!openResponse.ok || !openData.success) {
+        throw new Error(openData.error || 'Erro ao carregar orçamentos em aberto')
+      }
+
+      if (!approvedResponse.ok || !approvedData.success) {
+        throw new Error(approvedData.error || 'Erro ao carregar orçamentos aprovados')
+      }
+
+      // Combinar os resultados
+      const allPlans = [...(openData.data || []), ...(approvedData.data || [])]
+      
+      setTreatmentPlans(allPlans)
+
+    } catch (err) {
+      console.error('Erro ao carregar orçamentos:', err)
+      setError(err instanceof Error ? err.message : 'Erro ao carregar orçamentos')
+    } finally {
+      setLoadingData(false)
+    }
+  }
+
   // Carregar dados quando modal abrir
   useEffect(() => {
     if (open) {
@@ -93,19 +158,33 @@ export function PaymentFormModal({ open, onOpenChange, onSuccess, patientId }: P
       if (patient) {
         setSelectedPatientId(patientId)
       }
+    } else if (patientId) {
+      setSelectedPatientId(patientId)
     }
   }, [patientId, patients])
+
+  // Carregar orçamentos quando paciente for selecionado
+  useEffect(() => {
+    if (selectedPatientId && selectedPatientId !== 'none') {
+      loadTreatmentPlans(selectedPatientId)
+    } else {
+      setTreatmentPlans([])
+      setSelectedTreatmentPlanIds([])
+    }
+  }, [selectedPatientId])
 
   // Limpar formulário quando modal fechar
   useEffect(() => {
     if (!open) {
       setError(null)
-      setSelectedPatientId('none')
+      setSelectedPatientId(patientId || 'none')
+      setSelectedTreatmentPlanIds([])
+      setTreatmentPlans([])
       setAmount('')
       setMethod('')
       setDescription('')
     }
-  }, [open])
+  }, [open, patientId])
 
   // Validar formulário
   const validateForm = () => {
@@ -138,7 +217,8 @@ export function PaymentFormModal({ open, onOpenChange, onSuccess, patientId }: P
         amount: parseFloat(amount),
         method,
         patientId: selectedPatientId === 'none' ? null : selectedPatientId,
-        description: description.trim() || null
+        description: description.trim() || null,
+        treatmentPlanIds: selectedTreatmentPlanIds.length > 0 ? selectedTreatmentPlanIds : undefined
       }
 
       const response = await fetch('/api/payments', {
@@ -186,12 +266,38 @@ export function PaymentFormModal({ open, onOpenChange, onSuccess, patientId }: P
     }
   }
 
+  // Handler para seleção/deseleção de orçamento
+  const handleTreatmentPlanToggle = (treatmentPlanId: string) => {
+    setSelectedTreatmentPlanIds(prev => {
+      if (prev.includes(treatmentPlanId)) {
+        return prev.filter(id => id !== treatmentPlanId)
+      } else {
+        return [...prev, treatmentPlanId]
+      }
+    })
+  }
+
+  // Calcular total dos orçamentos selecionados
+  const getSelectedTreatmentPlansTotal = () => {
+    return treatmentPlans
+      .filter(plan => selectedTreatmentPlanIds.includes(plan.id))
+      .reduce((sum, plan) => sum + plan.totalAmount, 0)
+  }
+
+  // Formatar valor para exibição
+  const formatCurrencyValue = (value: number) => {
+    return value.toLocaleString('pt-BR', { 
+      style: 'currency', 
+      currency: 'BRL' 
+    })
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] sm:w-full sm:max-w-[500px] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
+          <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <DollarSign className="h-5 w-5 text-primary" />
             Registrar Pagamento
           </DialogTitle>
         </DialogHeader>
@@ -204,22 +310,26 @@ export function PaymentFormModal({ open, onOpenChange, onSuccess, patientId }: P
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6 mt-4">
             {/* Seleção de Paciente */}
             <div className="space-y-2">
-              <Label htmlFor="patient">Paciente (opcional)</Label>
-              <Select value={selectedPatientId} onValueChange={setSelectedPatientId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um paciente ou deixe vazio para pagamento avulso" />
+              <Label htmlFor="patient" className="text-xs sm:text-sm font-medium">Paciente *</Label>
+              <Select 
+                value={selectedPatientId} 
+                onValueChange={setSelectedPatientId}
+                disabled={!!patientId}
+              >
+                <SelectTrigger className="h-11 sm:h-10 text-sm sm:text-base">
+                  <SelectValue placeholder="Selecione um paciente" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Pagamento Avulso</SelectItem>
+                  <SelectItem value="none">Pagamento Avulso (Sem Paciente)</SelectItem>
                   {patients.filter(p => p.id).map((patient) => (
                     <SelectItem key={patient.id} value={patient.id}>
-                      <div>
-                        <div className="font-medium">{patient.name}</div>
+                      <div className="text-left">
+                        <div className="font-medium text-sm">{patient.name}</div>
                         {patient.email && (
-                          <div className="text-sm text-muted-foreground">{patient.email}</div>
+                          <div className="text-xs text-muted-foreground">{patient.email}</div>
                         )}
                       </div>
                     </SelectItem>
@@ -228,21 +338,110 @@ export function PaymentFormModal({ open, onOpenChange, onSuccess, patientId }: P
               </Select>
             </div>
 
+            {/* Seleção de Orçamentos */}
+            {selectedPatientId !== 'none' && (
+              <div className="space-y-2">
+                <Label className="text-xs sm:text-sm font-medium">
+                  Orçamentos Associados (opcional)
+                </Label>
+                {treatmentPlans.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-muted-foreground/25 p-4 text-center">
+                    <FileText className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
+                    <p className="text-sm text-muted-foreground">
+                      Nenhum orçamento disponível para este paciente
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Apenas orçamentos em aberto ou aprovados podem ser associados
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      Selecione os orçamentos que este pagamento deve cobrir:
+                    </p>
+                    <div className="max-h-40 overflow-y-auto space-y-2 border rounded-lg p-2">
+                      {treatmentPlans.map((plan) => (
+                        <div
+                          key={plan.id}
+                          className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                            selectedTreatmentPlanIds.includes(plan.id)
+                              ? 'border-primary bg-primary/5'
+                              : 'border-muted hover:border-muted-foreground/25'
+                          }`}
+                          onClick={() => handleTreatmentPlanToggle(plan.id)}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                                  selectedTreatmentPlanIds.includes(plan.id)
+                                    ? 'border-primary bg-primary'
+                                    : 'border-muted-foreground/25'
+                                }`}>
+                                  {selectedTreatmentPlanIds.includes(plan.id) && (
+                                    <Check className="h-3 w-3 text-primary-foreground" />
+                                  )}
+                                </div>
+                                <span className={`text-xs px-2 py-1 rounded-full ${
+                                  plan.status === 'OPEN'
+                                    ? 'bg-yellow-100 text-yellow-800'
+                                    : 'bg-green-100 text-green-800'
+                                }`}>
+                                  {plan.status === 'OPEN' ? 'Em Aberto' : 'Aprovado'}
+                                </span>
+                              </div>
+                              <div className="text-sm font-medium mb-1">
+                                {formatCurrencyValue(plan.totalAmount)}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {plan.items.length} item(s) • Dr. {plan.dentist.user.name}
+                              </div>
+                              {plan.notes && (
+                                <div className="text-xs text-muted-foreground mt-1 truncate">
+                                  {plan.notes}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {selectedTreatmentPlanIds.length > 0 && (
+                      <div className="rounded-lg bg-primary/5 p-3 border border-primary/10">
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-muted-foreground">
+                            Total dos orçamentos selecionados:
+                          </span>
+                          <span className="font-bold text-primary">
+                            {formatCurrencyValue(getSelectedTreatmentPlansTotal())}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Valor */}
             <div className="space-y-2">
-              <Label htmlFor="amount">Valor *</Label>
+              <Label htmlFor="amount" className="text-xs sm:text-sm font-medium">Valor *</Label>
               <div className="space-y-1">
-                <Input
-                  id="amount"
-                  type="text"
-                  placeholder="0.00"
-                  value={amount}
-                  onChange={handleAmountChange}
-                  disabled={loading}
-                />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">R$</span>
+                  <Input
+                    id="amount"
+                    type="text"
+                    placeholder="0.00"
+                    value={amount}
+                    onChange={handleAmountChange}
+                    disabled={loading}
+                    className="pl-9 h-11 sm:h-10 text-sm sm:text-base font-medium"
+                  />
+                </div>
                 {amount && (
-                  <p className="text-sm text-muted-foreground">
-                    Valor: {formatCurrency(amount)}
+                  <p className="text-xs text-primary font-bold">
+                    Extenso: {formatCurrency(amount)}
                   </p>
                 )}
               </div>
@@ -250,10 +449,10 @@ export function PaymentFormModal({ open, onOpenChange, onSuccess, patientId }: P
 
             {/* Método de Pagamento */}
             <div className="space-y-2">
-              <Label htmlFor="method">Método de Pagamento *</Label>
+              <Label htmlFor="method" className="text-xs sm:text-sm font-medium">Método de Pagamento *</Label>
               <Select value={method} onValueChange={(value: PaymentMethod) => setMethod(value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o método de pagamento" />
+                <SelectTrigger className="h-11 sm:h-10 text-sm sm:text-base">
+                  <SelectValue placeholder="Selecione o método" />
                 </SelectTrigger>
                 <SelectContent>
                   {paymentMethods.map((paymentMethod) => (
@@ -270,48 +469,56 @@ export function PaymentFormModal({ open, onOpenChange, onSuccess, patientId }: P
 
             {/* Descrição */}
             <div className="space-y-2">
-              <Label htmlFor="description">Descrição (opcional)</Label>
+              <Label htmlFor="description" className="text-xs sm:text-sm font-medium">Descrição (opcional)</Label>
               <Input
                 id="description"
-                placeholder="Ex: Consulta, procedimento, produto..."
+                placeholder="Ex: Consulta, restauração..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 disabled={loading}
                 maxLength={500}
+                className="h-11 sm:h-10 text-sm sm:text-base"
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[10px] text-right text-muted-foreground">
                 {description.length}/500 caracteres
               </p>
             </div>
 
-            {/* Resumo */}
+            {/* Resumo (Opcional - só mostra se tiver valores) */}
             {amount && method && (
-              <div className="rounded-lg bg-muted p-4">
-                <h4 className="font-medium mb-2">Resumo do Pagamento</h4>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span>Paciente:</span>
-                    <span>
+              <div className="rounded-lg bg-primary/5 p-4 border border-primary/10">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-primary mb-3">Resumo do Lançamento</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Paciente:</span>
+                    <span className="font-medium">
                       {selectedPatientId === 'none'
-                        ? 'Pagamento Avulso'
+                        ? 'Avulso'
                         : patients.find(p => p.id === selectedPatientId)?.name || 'N/A'
                       }
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Método:</span>
-                    <span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Método:</span>
+                    <span className="font-medium">
                       {paymentMethods.find(m => m.value === method)?.label || method}
                     </span>
                   </div>
-                  <div className="flex justify-between font-medium">
-                    <span>Valor:</span>
-                    <span>{formatCurrency(amount)}</span>
+                  {selectedTreatmentPlanIds.length > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Orçamentos:</span>
+                      <span className="font-medium">
+                        {selectedTreatmentPlanIds.length} selecionado(s)
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center pt-2 border-t">
+                    <span className="font-bold">Total:</span>
+                    <span className="font-bold text-lg text-primary">{formatCurrency(amount)}</span>
                   </div>
-                  {description && (
-                    <div className="flex justify-between">
-                      <span>Descrição:</span>
-                      <span className="text-right max-w-48 truncate">{description}</span>
+                  {selectedTreatmentPlanIds.length > 0 && (
+                    <div className="text-xs text-muted-foreground pt-1">
+                      * Orçamentos em aberto serão automaticamente aprovados
                     </div>
                   )}
                 </div>
@@ -321,21 +528,22 @@ export function PaymentFormModal({ open, onOpenChange, onSuccess, patientId }: P
             {/* Erro */}
             {error && (
               <div className="rounded-md bg-destructive/10 p-3">
-                <p className="text-sm text-destructive">{error}</p>
+                <p className="text-xs sm:text-sm text-destructive font-medium">{error}</p>
               </div>
             )}
 
             {/* Botões */}
-            <div className="flex justify-end space-x-2 pt-4">
+            <div className="flex flex-col sm:flex-row justify-end gap-2 pt-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
                 disabled={loading}
+                className="w-full sm:w-auto order-2 sm:order-1 h-11 sm:h-10"
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={loading}>
+              <Button type="submit" disabled={loading} className="w-full sm:w-auto order-1 sm:order-2 h-11 sm:h-10">
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Registrar Pagamento
               </Button>

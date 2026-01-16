@@ -17,24 +17,24 @@ export default async function DashboardPage() {
   const user = await getSessionUser()
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight text-heading">Dashboard</h2>
-        <p className="text-slate-500 dark:text-slate-400 mt-1 text-lg">
+        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-heading">Dashboard</h2>
+        <p className="text-slate-500 dark:text-slate-400 mt-1 text-base sm:text-lg">
           Bem-vindo de volta, {user?.name}!
         </p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-border-subtle dark:border-slate-800 shadow-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+        <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl border border-border-subtle dark:border-slate-800 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Novos Pacientes</span>
-            <UserPlus className="h-5 w-5 text-primary" />
+            <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">Novos Pacientes</span>
+            <UserPlus className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
           </div>
           <div className="flex items-end justify-between">
             <div>
-              <div className="text-3xl font-bold text-heading">12</div>
+              <div className="text-2xl sm:text-3xl font-bold text-heading">12</div>
               <div className="text-xs text-emerald-500 font-medium flex items-center mt-1">
                 <TrendingUp className="h-3 w-3 mr-1" /> +14%
               </div>
@@ -42,27 +42,27 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-border-subtle dark:border-slate-800 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl border border-border-subtle dark:border-slate-800 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Consultas Hoje</span>
-            <CalendarDays className="h-5 w-5 text-primary" />
+            <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">Consultas Hoje</span>
+            <CalendarDays className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
           </div>
           <div className="flex items-end justify-between">
             <div>
-              <div className="text-3xl font-bold text-heading">08</div>
+              <div className="text-2xl sm:text-3xl font-bold text-heading">08</div>
               <div className="text-xs text-slate-400 font-medium mt-1">4 concluídas, 4 pendentes</div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-border-subtle dark:border-slate-800 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl border border-border-subtle dark:border-slate-800 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Receita Mensal</span>
-            <DollarSign className="h-5 w-5 text-primary" />
+            <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">Receita Mensal</span>
+            <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
           </div>
           <div className="flex items-end justify-between">
             <div>
-              <div className="text-3xl font-bold text-heading">R$ 14.280</div>
+              <div className="text-2xl sm:text-3xl font-bold text-heading">R$ 14.280</div>
               <div className="flex items-center mt-2 space-x-1">
                 <div className="w-1 bg-chart-main h-2 rounded-full"></div>
                 <div className="w-1 bg-chart-main h-4 rounded-full"></div>
@@ -75,31 +75,31 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-border-subtle dark:border-slate-800 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl border border-border-subtle dark:border-slate-800 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Orçamentos Abertos</span>
-            <FileText className="h-5 w-5 text-primary" />
+            <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">Orçamentos Abertos</span>
+            <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
           </div>
           <div className="flex items-end justify-between">
             <div>
-              <div className="text-3xl font-bold text-heading">24</div>
+              <div className="text-2xl sm:text-3xl font-bold text-heading">24</div>
               <div className="text-xs text-amber-500 font-medium mt-1">R$ 4.500 em aberto</div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
         {/* Performance Chart Placeholder */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-lg font-bold text-heading">Desempenho Mensal</h3>
-            <select className="text-sm border-slate-200 dark:border-slate-700 bg-transparent rounded-md dark:text-slate-400 focus:ring-primary">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 sm:p-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-4">
+            <h3 className="text-base sm:text-lg font-bold text-heading">Desempenho Mensal</h3>
+            <select className="text-sm border-slate-200 dark:border-slate-700 bg-transparent rounded-md dark:text-slate-400 focus:ring-primary w-full sm:w-auto">
               <option>Últimos 6 meses</option>
               <option>Último ano</option>
             </select>
           </div>
-          <div className="h-64 flex items-end justify-between px-4 space-x-6">
+          <div className="h-48 sm:h-64 flex items-end justify-between px-2 sm:px-4 space-x-2 sm:space-x-6">
             {[
               { month: 'Jan', val: 32, current: false },
               { month: 'Fev', val: 48, current: false },
@@ -125,9 +125,9 @@ export default async function DashboardPage() {
         </div>
 
         {/* Upcoming Appointments */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm overflow-hidden flex flex-col">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 sm:p-6 shadow-sm overflow-hidden flex flex-col">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-bold text-heading">Próximas Consultas</h3>
+            <h3 className="text-base sm:text-lg font-bold text-heading">Próximas Consultas</h3>
             <button className="text-xs text-primary font-semibold hover:underline">Ver todas</button>
           </div>
           <div className="space-y-4 flex-1">
@@ -137,12 +137,12 @@ export default async function DashboardPage() {
               { name: 'Ana Luiza', type: 'Manutenção Aparelho', time: '16:45', initial: 'AL', color: 'bg-chart-subtle/40', textColor: 'text-heading' },
             ].map((app) => (
               <div key={app.name} className="flex items-center p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer group">
-                <div className={cn("w-10 h-10 rounded-full flex items-center justify-center font-bold mr-4", app.color, app.textColor)}>
+                <div className={cn("w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold mr-3 sm:mr-4 text-xs sm:text-base", app.color, app.textColor)}>
                   {app.initial}
                 </div>
                 <div className="flex-1">
-                  <h4 className="text-sm font-semibold">{app.name}</h4>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">{app.type}</p>
+                  <h4 className="text-xs sm:text-sm font-semibold">{app.name}</h4>
+                  <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400">{app.type}</p>
                 </div>
                 <div className="text-right">
                   <div className="text-xs font-bold text-slate-700 dark:text-slate-300">{app.time}</div>
@@ -151,7 +151,7 @@ export default async function DashboardPage() {
               </div>
             ))}
           </div>
-          <Button className="mt-6 w-full py-6 bg-primary text-white rounded-lg font-medium hover:opacity-90 transition-colors flex items-center justify-center h-12">
+          <Button className="mt-6 w-full py-5 sm:py-6 bg-primary text-white rounded-lg font-medium hover:opacity-90 transition-colors flex items-center justify-center h-10 sm:h-12 text-sm sm:text-base">
             <Plus className="h-4 w-4 mr-2" />
             Novo Agendamento
           </Button>
@@ -160,13 +160,13 @@ export default async function DashboardPage() {
 
       {/* Recent Activity Table */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-          <h3 className="text-lg font-bold text-heading">Atividade Recente</h3>
-          <div className="flex space-x-2">
-            <div className="relative">
+        <div className="p-4 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h3 className="text-base sm:text-lg font-bold text-heading">Atividade Recente</h3>
+          <div className="flex space-x-2 w-full sm:w-auto">
+            <div className="relative w-full sm:w-auto">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input 
-                className="pl-9 pr-4 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary w-48 h-9" 
+                className="pl-9 pr-4 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary w-full sm:w-48 h-9" 
                 placeholder="Filtrar..." 
                 type="text" 
               />

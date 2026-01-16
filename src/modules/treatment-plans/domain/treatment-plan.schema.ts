@@ -56,6 +56,11 @@ export const updateTreatmentPlanSchema = z.object({
     .max(2000, 'Observações devem ter no máximo 2000 caracteres')
     .trim()
     .nullable()
+    .optional(),
+  items: z
+    .array(treatmentItemSchema)
+    .min(1, 'Deve haver pelo menos um item no orçamento')
+    .max(50, 'Máximo de 50 itens por orçamento')
     .optional()
 })
 

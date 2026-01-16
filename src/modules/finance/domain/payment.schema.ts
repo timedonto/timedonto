@@ -26,6 +26,9 @@ export const createPaymentSchema = z.object({
     .max(500, 'Descrição deve ter no máximo 500 caracteres')
     .trim()
     .nullable()
+    .optional(),
+  treatmentPlanIds: z
+    .array(z.string().cuid('ID do orçamento deve ser um CUID válido'))
     .optional()
 })
 
@@ -86,6 +89,12 @@ export interface PaymentOutput {
     email: string | null
     phone: string | null
   } | null
+  treatmentPlans?: {
+    id: string
+    status: string
+    totalAmount: number
+    notes: string | null
+  }[]
 }
 
 // =====================================================================

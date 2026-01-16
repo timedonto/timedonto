@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Plus, X, Loader2 } from 'lucide-react';
+import { Plus, X, Loader2, Stethoscope, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Odontogram } from './odontogram';
+import { Badge } from '@/components/ui/badge';
 
 interface RecordFormModalProps {
   open: boolean;
@@ -147,10 +148,10 @@ export function RecordFormModal({ open, onOpenChange, patientId, onSuccess }: Re
     for (let i = 0; i < formData.procedures.length; i++) {
       const proc = formData.procedures[i];
       if (!proc.code.trim()) {
-        return `Código do procedimento ${i + 1} é obrigatório`;
+        return `Item ${i + 1}: Código do procedimento é obrigatório`;
       }
       if (!proc.description.trim()) {
-        return `Descrição do procedimento ${i + 1} é obrigatória`;
+        return `Item ${i + 1}: Descrição do procedimento é obrigatória`;
       }
     }
 
@@ -212,33 +213,41 @@ export function RecordFormModal({ open, onOpenChange, patientId, onSuccess }: Re
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Novo Registro no Prontuário</DialogTitle>
+      <DialogContent className="w-[95vw] sm:w-full sm:max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col p-0">
+        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-4 border-b flex-shrink-0">
+          <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <ClipboardList className="h-5 w-5 text-primary" />
+            Novo Registro no Prontuário
+          </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6">
+          <form onSubmit={handleSubmit} className="space-y-6 py-4">
           {/* Dentist Selection */}
           <div className="space-y-2">
-            <Label htmlFor="dentistId">Dentista *</Label>
+            <Label htmlFor="dentistId" className="text-xs sm:text-sm font-medium">Dentista responsável *</Label>
             {loadingDentists ? (
-              <div className="flex items-center gap-2 text-muted-foreground">
+              <div className="flex items-center gap-2 p-3 text-sm text-muted-foreground border rounded-md">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Carregando dentistas...
+                Carregando profissionais...
               </div>
             ) : (
               <Select
                 value={formData.dentistId}
                 onValueChange={(value) => handleInputChange('dentistId', value)}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um dentista" />
+                <SelectTrigger className="h-11 sm:h-10 text-sm">
+                  <SelectValue placeholder="Selecione o dentista responsável" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[200px]">
                   {dentists.map((dentist) => (
-                    <SelectItem key={dentist.id} value={dentist.id}>
-                      Dr(a). {dentist.user.name} - CRO: {dentist.cro}
-                      {dentist.specialty && ` (${dentist.specialty})`}
+                    <SelectItem key={dentist.id} value={dentist.id} className="py-3">
+                      <div className="text-left w-full">
+                        <div className="font-medium text-sm">Dr(a). {dentist.user.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          CRO: {dentist.cro} {dentist.specialty && `• ${dentist.specialty}`}
+                        </div>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -248,122 +257,152 @@ export function RecordFormModal({ open, onOpenChange, patientId, onSuccess }: Re
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description">Descrição *</Label>
+            <Label htmlFor="description" className="text-xs sm:text-sm font-medium">Anamnese / Evolução Clínica *</Label>
             <Textarea
               id="description"
-              placeholder="Descreva o atendimento, diagnóstico, tratamento realizado..."
+              placeholder="Descreva detalhadamente o atendimento, queixas do paciente, diagnóstico e tratamentos realizados..."
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
               rows={4}
-              className="resize-none"
+              className="resize-none text-sm min-h-[100px] sm:min-h-[120px]"
             />
-            <div className="text-xs text-muted-foreground">
-              {formData.description.length}/10 caracteres mínimos
+            <div className="text-[10px] text-right text-muted-foreground uppercase font-bold">
+              {formData.description.length} caracteres (mínimo 10)
             </div>
           </div>
 
           {/* Procedures */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label>Procedimentos Realizados</Label>
+              <Label className="text-sm sm:text-base font-medium flex items-center gap-2">
+                <Stethoscope className="h-4 w-4 text-primary" />
+                Procedimentos Realizados
+              </Label>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={addProcedure}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 h-9"
               >
                 <Plus className="h-4 w-4" />
-                Adicionar Procedimento
+                <span className="hidden sm:inline">Adicionar</span>
+                <span className="sm:hidden text-xs">Adicionar</span>
               </Button>
             </div>
 
-            {formData.procedures.length > 0 && (
-              <div className="space-y-3">
-                {formData.procedures.map((procedure, index) => (
-                  <div key={index} className="flex items-start gap-3 p-3 border rounded-lg">
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs">Código *</Label>
-                        <Input
-                          placeholder="Ex: 01101"
-                          value={procedure.code}
-                          onChange={(e) => updateProcedure(index, 'code', e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Descrição *</Label>
-                        <Input
-                          placeholder="Ex: Consulta odontológica"
-                          value={procedure.description}
-                          onChange={(e) => updateProcedure(index, 'description', e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Dente (opcional)</Label>
-                        <Input
-                          placeholder="Ex: 11, 21"
-                          value={procedure.tooth || ''}
-                          onChange={(e) => updateProcedure(index, 'tooth', e.target.value)}
-                        />
-                      </div>
+            <div className="space-y-3">
+              {formData.procedures.map((procedure, index) => (
+                <div key={index} className="p-4 border rounded-lg bg-slate-50/50 dark:bg-slate-900/50 relative">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeProcedure(index)}
+                    className="absolute right-2 top-2 h-8 w-8 p-0 text-muted-foreground hover:text-destructive z-10"
+                  >
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Remover procedimento</span>
+                  </Button>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-6 sm:pt-2">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium text-muted-foreground">Código *</Label>
+                      <Input
+                        placeholder="Ex: 01101"
+                        value={procedure.code}
+                        onChange={(e) => updateProcedure(index, 'code', e.target.value)}
+                        className="h-10 text-sm"
+                      />
                     </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeProcedure(index)}
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                    <div className="space-y-2 sm:col-span-1 lg:col-span-1">
+                      <Label className="text-xs font-medium text-muted-foreground">Descrição *</Label>
+                      <Input
+                        placeholder="Ex: Restauração"
+                        value={procedure.description}
+                        onChange={(e) => updateProcedure(index, 'description', e.target.value)}
+                        className="h-10 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium text-muted-foreground">Dente (opcional)</Label>
+                      <Input
+                        placeholder="Ex: 11, 21"
+                        value={procedure.tooth || ''}
+                        onChange={(e) => updateProcedure(index, 'tooth', e.target.value)}
+                        className="h-10 text-sm"
+                      />
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
+                </div>
+              ))}
+              {formData.procedures.length === 0 && (
+                <div className="text-center py-6 border border-dashed rounded-lg text-muted-foreground text-xs italic">
+                  Nenhum procedimento específico adicionado
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Odontogram */}
           <div className="space-y-4">
-            <Label>Odontograma</Label>
-            <div className="border rounded-lg p-4">
-              <Odontogram
-                data={formData.odontogram}
-                onChange={handleOdontogramChange}
-                readOnly={false}
-              />
+            <Label className="text-sm font-medium">Odontograma</Label>
+            <div className="border rounded-lg p-3 sm:p-4 bg-white dark:bg-slate-950">
+              <div className="overflow-x-auto">
+                <div className="min-w-[600px] pb-2">
+                  <Odontogram
+                    data={formData.odontogram}
+                    onChange={handleOdontogramChange}
+                    readOnly={false}
+                  />
+                </div>
+              </div>
+              <div className="text-xs text-center text-muted-foreground border-t pt-3 mt-2">
+                <span className="hidden sm:inline">Arraste horizontalmente para ver toda a arcada se necessário</span>
+                <span className="sm:hidden">Deslize para ver toda a arcada</span>
+              </div>
             </div>
           </div>
 
           {/* Error Message */}
           {error && (
-            <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md">
+            <div className="p-3 text-xs sm:text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md font-medium">
               {error}
             </div>
           )}
 
-          {/* Form Actions */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t">
+          </form>
+        </div>
+
+        {/* Form Actions - Fixed Footer */}
+        <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t bg-background">
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-3">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={submitting}
+              className="w-full sm:w-auto order-2 sm:order-1 h-11 sm:h-10"
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={submitting}>
+            <Button 
+              type="submit" 
+              disabled={submitting}
+              onClick={handleSubmit}
+              className="w-full sm:w-auto order-1 sm:order-2 h-11 sm:h-10"
+            >
               {submitting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   Salvando...
                 </>
               ) : (
-                'Salvar Registro'
+                'Salvar Registro Completo'
               )}
             </Button>
           </div>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

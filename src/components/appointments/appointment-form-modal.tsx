@@ -79,9 +79,10 @@ interface AppointmentFormModalProps {
   onOpenChange: (open: boolean) => void
   appointment?: AppointmentOutput
   onSuccess: () => void
+  patientId?: string
 }
 
-export function AppointmentFormModal({ open, onOpenChange, appointment, onSuccess }: AppointmentFormModalProps) {
+export function AppointmentFormModal({ open, onOpenChange, appointment, onSuccess, patientId }: AppointmentFormModalProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [dentists, setDentists] = useState<Dentist[]>([])
@@ -99,7 +100,7 @@ export function AppointmentFormModal({ open, onOpenChange, appointment, onSucces
     resolver: zodResolver(schema),
     defaultValues: {
       dentistId: '',
-      patientId: '',
+      patientId: patientId || '',
       date: '',
       durationMinutes: 30,
       ...(isEditing && { status: AppointmentStatus.SCHEDULED }),
@@ -159,7 +160,7 @@ export function AppointmentFormModal({ open, onOpenChange, appointment, onSucces
     }
   }
 
-  // Preencher formulário quando editando
+  // Preencher formulário quando editando ou quando patientId mudar
   useEffect(() => {
     if (isEditing && appointment) {
       setValue('dentistId', appointment.dentistId)
@@ -172,15 +173,14 @@ export function AppointmentFormModal({ open, onOpenChange, appointment, onSucces
     } else {
       reset({
         dentistId: '',
-        patientId: '',
+        patientId: patientId || '',
         date: '',
         durationMinutes: 30,
-        ...(isEditing && { status: AppointmentStatus.SCHEDULED }),
         procedure: '',
         notes: '',
       })
     }
-  }, [isEditing, appointment, setValue, reset])
+  }, [isEditing, appointment, patientId, setValue, reset])
 
   // Buscar dados quando modal abrir
   useEffect(() => {
@@ -189,6 +189,13 @@ export function AppointmentFormModal({ open, onOpenChange, appointment, onSucces
       fetchPatients()
     }
   }, [open])
+
+  // Garantir que o patientId seja definido quando os pacientes forem carregados
+  useEffect(() => {
+    if (patientId && patients.length > 0 && !isEditing) {
+      setValue('patientId', patientId)
+    }
+  }, [patientId, patients, isEditing, setValue])
 
   // Limpar formulário quando modal fechar
   useEffect(() => {
@@ -274,17 +281,17 @@ export function AppointmentFormModal({ open, onOpenChange, appointment, onSucces
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] sm:w-full sm:max-w-[550px] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle className="text-lg sm:text-xl">{title}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
           {/* Dentista */}
-          <div className="space-y-2">
-            <Label htmlFor="dentistId">Dentista *</Label>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="dentistId" className="text-xs sm:text-sm">Dentista *</Label>
             {loadingDentists ? (
-              <div className="flex items-center gap-2 p-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 p-2 text-xs sm:text-sm text-muted-foreground border rounded-md">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Carregando dentistas...
               </div>
@@ -294,20 +301,20 @@ export function AppointmentFormModal({ open, onOpenChange, appointment, onSucces
                 onValueChange={(value) => setValue('dentistId', value)}
                 disabled={loading}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-11 sm:h-10 text-sm sm:text-base">
                   <SelectValue placeholder="Selecione um dentista" />
                 </SelectTrigger>
                 <SelectContent>
                   {dentists.length === 0 ? (
-                    <div className="p-2 text-sm text-muted-foreground text-center">
+                    <div className="p-2 text-xs sm:text-sm text-muted-foreground text-center">
                       Nenhum dentista disponível
                     </div>
                   ) : (
                     dentists.map((dentist) => (
                       <SelectItem key={dentist.id} value={dentist.id}>
-                        <div>
+                        <div className="text-xs sm:text-sm text-left">
                           <div className="font-medium">{dentist.user.name}</div>
-                          <div className="text-sm text-muted-foreground">
+                          <div className="text-muted-foreground text-[10px] sm:text-xs">
                             {dentist.cro} {dentist.specialty && `- ${dentist.specialty}`}
                           </div>
                         </div>
@@ -318,15 +325,15 @@ export function AppointmentFormModal({ open, onOpenChange, appointment, onSucces
               </Select>
             )}
             {errors.dentistId && (
-              <p className="text-sm text-destructive">{errors.dentistId.message}</p>
+              <p className="text-xs sm:text-sm text-destructive">{errors.dentistId.message}</p>
             )}
           </div>
 
           {/* Paciente */}
-          <div className="space-y-2">
-            <Label htmlFor="patientId">Paciente *</Label>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="patientId" className="text-xs sm:text-sm">Paciente *</Label>
             {loadingPatients ? (
-              <div className="flex items-center gap-2 p-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 p-2 text-xs sm:text-sm text-muted-foreground border rounded-md">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Carregando pacientes...
               </div>
@@ -334,23 +341,23 @@ export function AppointmentFormModal({ open, onOpenChange, appointment, onSucces
               <Select
                 value={selectedPatientId || ''}
                 onValueChange={(value) => setValue('patientId', value)}
-                disabled={loading}
+                disabled={loading || !!patientId}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-11 sm:h-10 text-sm sm:text-base">
                   <SelectValue placeholder="Selecione um paciente" />
                 </SelectTrigger>
                 <SelectContent>
                   {patients.length === 0 ? (
-                    <div className="p-2 text-sm text-muted-foreground text-center">
+                    <div className="p-2 text-xs sm:text-sm text-muted-foreground text-center">
                       Nenhum paciente disponível
                     </div>
                   ) : (
                     patients.map((patient) => (
                       <SelectItem key={patient.id} value={patient.id}>
-                        <div>
+                        <div className="text-xs sm:text-sm text-left">
                           <div className="font-medium">{patient.name}</div>
                           {patient.phone && (
-                            <div className="text-sm text-muted-foreground">{patient.phone}</div>
+                            <div className="text-muted-foreground text-[10px] sm:text-xs">{patient.phone}</div>
                           )}
                         </div>
                       </SelectItem>
@@ -360,27 +367,28 @@ export function AppointmentFormModal({ open, onOpenChange, appointment, onSucces
               </Select>
             )}
             {errors.patientId && (
-              <p className="text-sm text-destructive">{errors.patientId.message}</p>
+              <p className="text-xs sm:text-sm text-destructive">{errors.patientId.message}</p>
             )}
           </div>
 
           {/* Data e Hora */}
           <div className="space-y-2">
-            <Label htmlFor="date">Data e Hora *</Label>
+            <Label htmlFor="date" className="text-xs sm:text-sm">Data e Hora *</Label>
             <Input
               id="date"
               type="datetime-local"
               {...register('date')}
               disabled={loading}
+              className="h-11 sm:h-10 text-sm sm:text-base"
             />
             {errors.date && (
-              <p className="text-sm text-destructive">{errors.date.message}</p>
+              <p className="text-xs sm:text-sm text-destructive">{errors.date.message}</p>
             )}
           </div>
 
           {/* Duração */}
           <div className="space-y-2">
-            <Label htmlFor="durationMinutes">Duração (minutos) *</Label>
+            <Label htmlFor="durationMinutes" className="text-xs sm:text-sm">Duração (min) *</Label>
             <Input
               id="durationMinutes"
               type="number"
@@ -392,86 +400,93 @@ export function AppointmentFormModal({ open, onOpenChange, appointment, onSucces
               })}
               placeholder="30"
               disabled={loading}
+              className="h-11 sm:h-10 text-sm sm:text-base"
             />
             {errors.durationMinutes && (
-              <p className="text-sm text-destructive">{errors.durationMinutes.message}</p>
+              <p className="text-xs sm:text-sm text-destructive">{errors.durationMinutes.message}</p>
             )}
           </div>
 
           {/* Status (apenas ao editar) */}
           {isEditing && (
-            <div className="space-y-2">
-              <Label htmlFor="status">Status *</Label>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="status" className="text-xs sm:text-sm">Status *</Label>
               <Select
                 value={selectedStatus || ''}
                 onValueChange={(value) => setValue('status', value as AppointmentStatus)}
                 disabled={loading}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-11 sm:h-10 text-sm sm:text-base">
                   <SelectValue placeholder="Selecione um status" />
                 </SelectTrigger>
                 <SelectContent>
                   {Object.values(AppointmentStatus).map((status) => (
                     <SelectItem key={status} value={status}>
-                      {getStatusLabel(status)}
+                      <span className="text-xs sm:text-sm">{getStatusLabel(status)}</span>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               {errors.status && (
-                <p className="text-sm text-destructive">{errors.status.message}</p>
+                <p className="text-xs sm:text-sm text-destructive">{errors.status.message}</p>
               )}
             </div>
           )}
 
           {/* Procedimento */}
-          <div className="space-y-2">
-            <Label htmlFor="procedure">Procedimento</Label>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="procedure" className="text-xs sm:text-sm">Procedimento</Label>
             <Input
               id="procedure"
               {...register('procedure')}
               placeholder="Ex: Limpeza, Consulta, Restauração"
               disabled={loading}
+              className="h-11 sm:h-10 text-sm sm:text-base"
             />
             {errors.procedure && (
-              <p className="text-sm text-destructive">{errors.procedure.message}</p>
+              <p className="text-xs sm:text-sm text-destructive">{errors.procedure.message}</p>
             )}
           </div>
 
           {/* Observações */}
-          <div className="space-y-2">
-            <Label htmlFor="notes">Observações</Label>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="notes" className="text-xs sm:text-sm">Observações</Label>
             <textarea
               id="notes"
               {...register('notes')}
-              placeholder="Informações adicionais sobre o agendamento..."
+              placeholder="Informações adicionais..."
               disabled={loading}
               rows={3}
-              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
             />
             {errors.notes && (
-              <p className="text-sm text-destructive">{errors.notes.message}</p>
+              <p className="text-xs sm:text-sm text-destructive">{errors.notes.message}</p>
             )}
           </div>
 
           {/* Erro */}
           {error && (
-            <div className="rounded-md bg-destructive/10 p-3">
-              <p className="text-sm text-destructive">{error}</p>
+            <div className="rounded-md bg-destructive/10 p-3 sm:col-span-2">
+              <p className="text-xs sm:text-sm text-destructive">{error}</p>
             </div>
           )}
 
           {/* Botões */}
-          <div className="flex justify-end space-x-2 pt-4">
+          <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 sm:col-span-2">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={loading}
+              className="w-full sm:w-auto order-2 sm:order-1 h-11 sm:h-10"
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading || loadingDentists || loadingPatients}>
+            <Button 
+              type="submit" 
+              disabled={loading || loadingDentists || loadingPatients}
+              className="w-full sm:w-auto order-1 sm:order-2 h-11 sm:h-10"
+            >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEditing ? 'Salvar Alterações' : 'Criar Agendamento'}
             </Button>

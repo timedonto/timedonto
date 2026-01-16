@@ -78,41 +78,43 @@ export function ReportFilter({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-wrap items-end gap-4">
+        <div className="space-y-4">
+          {/* Filtros de data */}
           {showDateRange && (
-            <>
-              <div className="flex items-center space-x-2">
-                <Label htmlFor="from-date">De:</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="from-date" className="text-xs sm:text-sm font-medium">Data início:</Label>
                 <Input
                   id="from-date"
                   type="date"
                   value={filters.fromDate || ''}
                   onChange={(e) => handleFilterChange('fromDate', e.target.value)}
-                  className="w-[150px]"
+                  className="w-full text-xs sm:text-sm"
                 />
               </div>
 
-              <div className="flex items-center space-x-2">
-                <Label htmlFor="to-date">Até:</Label>
+              <div className="space-y-2">
+                <Label htmlFor="to-date" className="text-xs sm:text-sm font-medium">Data fim:</Label>
                 <Input
                   id="to-date"
                   type="date"
                   value={filters.toDate || ''}
                   onChange={(e) => handleFilterChange('toDate', e.target.value)}
-                  className="w-[150px]"
+                  className="w-full text-xs sm:text-sm"
                 />
               </div>
-            </>
+            </div>
           )}
 
+          {/* Filtro de dentista */}
           {showDentist && dentists.length > 0 && (
-            <div className="flex items-center space-x-2">
-              <Label htmlFor="dentist-filter">Dentista:</Label>
+            <div className="space-y-2">
+              <Label htmlFor="dentist-filter" className="text-xs sm:text-sm font-medium">Dentista:</Label>
               <Select 
                 value={filters.dentistId || 'all'} 
                 onValueChange={(value) => handleFilterChange('dentistId', value === 'all' ? '' : value)}
               >
-                <SelectTrigger className="w-[200px]">
+                <SelectTrigger className="w-full text-xs sm:text-sm">
                   <SelectValue placeholder="Todos os dentistas" />
                 </SelectTrigger>
                 <SelectContent>
@@ -127,8 +129,9 @@ export function ReportFilter({
             </div>
           )}
 
-          <div className="flex items-center gap-2">
-            <Button onClick={handleApplyFilters} size="sm">
+          {/* Botões de ação */}
+          <div className="flex flex-col sm:flex-row gap-2 pt-2">
+            <Button onClick={handleApplyFilters} size="sm" className="w-full sm:w-auto">
               Filtrar
             </Button>
             
@@ -137,7 +140,7 @@ export function ReportFilter({
                 variant="ghost"
                 size="sm"
                 onClick={handleClearFilters}
-                className="flex items-center gap-1"
+                className="flex items-center justify-center gap-1 w-full sm:w-auto"
               >
                 <X className="h-3 w-3" />
                 Limpar

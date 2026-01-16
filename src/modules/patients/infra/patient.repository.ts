@@ -77,6 +77,9 @@ export class PatientRepository {
    * Busca paciente por ID validando que pertence à clínica
    */
   async findById(id: string, clinicId: string): Promise<PatientOutput | null> {
+    console.log('💾 REPOSITORY DEBUG - Buscando paciente com ID:', id) // Debug
+    console.log('💾 REPOSITORY DEBUG - Na clínica:', clinicId) // Debug
+    
     const patient = await prisma.patient.findFirst({
       where: {
         id,
@@ -97,6 +100,9 @@ export class PatientRepository {
         updatedAt: true,
       }
     })
+
+    console.log('💾 REPOSITORY DEBUG - Paciente encontrado:', patient?.name) // Debug
+    console.log('💾 REPOSITORY DEBUG - ID retornado:', patient?.id) // Debug
 
     return patient
   }

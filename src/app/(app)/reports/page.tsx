@@ -442,33 +442,33 @@ export default function ReportsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Relatórios</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Relatórios</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">
           Relatórios e análises da clínica
         </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="appointments" className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            Agenda
+        <TabsList className="flex w-full overflow-x-auto h-auto p-1 bg-muted/50 sm:grid sm:grid-cols-5 scrollbar-hide tabs-scroll">
+          <TabsTrigger value="appointments" className="flex items-center gap-1 sm:gap-2 py-2 px-2 sm:px-3 whitespace-nowrap min-w-0 flex-shrink-0">
+            <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+            <span className="text-[10px] xs:text-xs sm:text-sm truncate">Agenda</span>
           </TabsTrigger>
-          <TabsTrigger value="users" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Usuários
+          <TabsTrigger value="users" className="flex items-center gap-1 sm:gap-2 py-2 px-2 sm:px-3 whitespace-nowrap min-w-0 flex-shrink-0">
+            <Users className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+            <span className="text-[10px] xs:text-xs sm:text-sm truncate">Usuários</span>
           </TabsTrigger>
-          <TabsTrigger value="patients" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Pacientes
+          <TabsTrigger value="patients" className="flex items-center gap-1 sm:gap-2 py-2 px-2 sm:px-3 whitespace-nowrap min-w-0 flex-shrink-0">
+            <Users className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+            <span className="text-[10px] xs:text-xs sm:text-sm truncate">Pacientes</span>
           </TabsTrigger>
-          <TabsTrigger value="finance" className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4" />
-            Financeiro
+          <TabsTrigger value="finance" className="flex items-center gap-1 sm:gap-2 py-2 px-2 sm:px-3 whitespace-nowrap min-w-0 flex-shrink-0">
+            <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+            <span className="text-[10px] xs:text-xs sm:text-sm truncate">Financeiro</span>
           </TabsTrigger>
-          <TabsTrigger value="inventory" className="flex items-center gap-2">
-            <Package className="h-4 w-4" />
-            Estoque
+          <TabsTrigger value="inventory" className="flex items-center gap-1 sm:gap-2 py-2 px-2 sm:px-3 whitespace-nowrap min-w-0 flex-shrink-0">
+            <Package className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+            <span className="text-[10px] xs:text-xs sm:text-sm truncate">Estoque</span>
           </TabsTrigger>
         </TabsList>
 
@@ -486,7 +486,7 @@ export default function ReportsPage() {
           {appointmentData && (
             <>
               {/* Cards de resumo */}
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
                 <ReportCard
                   title="Total de Agendamentos"
                   value={appointmentData.total}
@@ -521,33 +521,33 @@ export default function ReportsPage() {
               {/* Cards por status */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Por Status</CardTitle>
+                  <CardTitle className="text-base sm:text-lg">Por Status</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+                  <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
                     <div className="text-center">
-                      <Badge variant="secondary" className="mb-2">Agendados</Badge>
-                      <div className="text-2xl font-bold">{appointmentData.byStatus.SCHEDULED}</div>
+                      <Badge variant="secondary" className="mb-2 text-[10px] sm:text-xs">Agendados</Badge>
+                      <div className="text-xl sm:text-2xl font-bold">{appointmentData.byStatus.SCHEDULED}</div>
                     </div>
                     <div className="text-center">
-                      <Badge variant="default" className="mb-2">Confirmados</Badge>
-                      <div className="text-2xl font-bold">{appointmentData.byStatus.CONFIRMED}</div>
+                      <Badge variant="default" className="mb-2 text-[10px] sm:text-xs">Confirmados</Badge>
+                      <div className="text-xl sm:text-2xl font-bold">{appointmentData.byStatus.CONFIRMED}</div>
                     </div>
                     <div className="text-center">
-                      <Badge variant="default" className="mb-2">Atendidos</Badge>
-                      <div className="text-2xl font-bold">{appointmentData.byStatus.DONE}</div>
+                      <Badge variant="default" className="mb-2 text-[10px] sm:text-xs">Atendidos</Badge>
+                      <div className="text-xl sm:text-2xl font-bold">{appointmentData.byStatus.DONE}</div>
                     </div>
                     <div className="text-center">
-                      <Badge variant="destructive" className="mb-2">Cancelados</Badge>
-                      <div className="text-2xl font-bold">{appointmentData.byStatus.CANCELED}</div>
+                      <Badge variant="destructive" className="mb-2 text-[10px] sm:text-xs">Cancelados</Badge>
+                      <div className="text-xl sm:text-2xl font-bold">{appointmentData.byStatus.CANCELED}</div>
                     </div>
                     <div className="text-center">
-                      <Badge variant="destructive" className="mb-2">Faltas</Badge>
-                      <div className="text-2xl font-bold">{appointmentData.byStatus.NO_SHOW}</div>
+                      <Badge variant="destructive" className="mb-2 text-[10px] sm:text-xs">Faltas</Badge>
+                      <div className="text-xl sm:text-2xl font-bold">{appointmentData.byStatus.NO_SHOW}</div>
                     </div>
                     <div className="text-center">
-                      <Badge variant="secondary" className="mb-2">Remarcados</Badge>
-                      <div className="text-2xl font-bold">{appointmentData.byStatus.RESCHEDULED}</div>
+                      <Badge variant="secondary" className="mb-2 text-[10px] sm:text-xs">Remarcados</Badge>
+                      <div className="text-xl sm:text-2xl font-bold">{appointmentData.byStatus.RESCHEDULED}</div>
                     </div>
                   </div>
                 </CardContent>
@@ -556,37 +556,40 @@ export default function ReportsPage() {
               {/* Por Dentista */}
               {appointmentData.byDentist.length > 0 && (
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>Por Dentista</CardTitle>
+                  <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <CardTitle className="text-base sm:text-lg">Por Dentista</CardTitle>
                     <ExportButton
                       data={appointmentData.byDentist}
                       columns={appointmentExportColumns}
                       filename="agendamentos_por_dentista"
+                      className="w-full sm:w-auto"
                     />
                   </CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Dentista</TableHead>
-                          <TableHead>Total</TableHead>
-                          <TableHead>Atendidos</TableHead>
-                          <TableHead>Cancelados</TableHead>
-                          <TableHead>Faltas</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {appointmentData.byDentist.map((dentist) => (
-                          <TableRow key={dentist.dentistId}>
-                            <TableCell className="font-medium">{dentist.dentistName}</TableCell>
-                            <TableCell>{dentist.total}</TableCell>
-                            <TableCell>{dentist.done}</TableCell>
-                            <TableCell>{dentist.canceled}</TableCell>
-                            <TableCell>{dentist.noShow}</TableCell>
+                  <CardContent className="p-0 sm:p-6">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-xs sm:text-sm">Dentista</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Total</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Atendidos</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Cancelados</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Faltas</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {appointmentData.byDentist.map((dentist) => (
+                            <TableRow key={dentist.dentistId}>
+                              <TableCell className="font-medium text-xs sm:text-sm">{dentist.dentistName}</TableCell>
+                              <TableCell className="text-xs sm:text-sm">{dentist.total}</TableCell>
+                              <TableCell className="text-xs sm:text-sm">{dentist.done}</TableCell>
+                              <TableCell className="text-xs sm:text-sm">{dentist.canceled}</TableCell>
+                              <TableCell className="text-xs sm:text-sm">{dentist.noShow}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </CardContent>
                 </Card>
               )}
@@ -595,14 +598,14 @@ export default function ReportsPage() {
               {appointmentData.busiestHours.length > 0 && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Horários Mais Movimentados</CardTitle>
+                    <CardTitle className="text-base sm:text-lg">Horários Mais Movimentados</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
                       {appointmentData.busiestHours.slice(0, 10).map((hour) => (
-                        <div key={hour.hour} className="flex justify-between items-center">
-                          <span>{formatHour(hour.hour)}</span>
-                          <Badge variant="outline">{hour.count} agendamentos</Badge>
+                        <div key={hour.hour} className="flex justify-between items-center text-xs sm:text-sm">
+                          <span className="font-medium">{formatHour(hour.hour)}</span>
+                          <Badge variant="outline" className="text-[10px] sm:text-xs">{hour.count} agendamentos</Badge>
                         </div>
                       ))}
                     </div>
@@ -613,41 +616,44 @@ export default function ReportsPage() {
               {/* Próximos Agendamentos */}
               {appointmentData.upcoming.length > 0 && (
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>Próximos Agendamentos</CardTitle>
+                  <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <CardTitle className="text-base sm:text-lg">Próximos Agendamentos</CardTitle>
                     <ExportButton
                       data={appointmentData.upcoming}
                       columns={upcomingAppointmentsColumns}
                       filename="proximos_agendamentos"
+                      className="w-full sm:w-auto"
                     />
                   </CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Data</TableHead>
-                          <TableHead>Paciente</TableHead>
-                          <TableHead>Dentista</TableHead>
-                          <TableHead>Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {appointmentData.upcoming.map((appointment) => (
-                          <TableRow key={appointment.id}>
-                            <TableCell className="font-medium">
-                              {formatDate(appointment.date)}
-                            </TableCell>
-                            <TableCell>{appointment.patientName}</TableCell>
-                            <TableCell>{appointment.dentistName}</TableCell>
-                            <TableCell>
-                              <Badge variant={getStatusBadge(appointment.status).variant}>
-                                {getStatusBadge(appointment.status).label}
-                              </Badge>
-                            </TableCell>
+                  <CardContent className="p-0 sm:p-6">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-xs sm:text-sm">Data</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Paciente</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Dentista</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Status</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {appointmentData.upcoming.map((appointment) => (
+                            <TableRow key={appointment.id}>
+                              <TableCell className="font-medium text-xs sm:text-sm">
+                                {formatDate(appointment.date)}
+                              </TableCell>
+                              <TableCell className="text-xs sm:text-sm">{appointment.patientName}</TableCell>
+                              <TableCell className="text-xs sm:text-sm">{appointment.dentistName}</TableCell>
+                              <TableCell className="text-xs sm:text-sm">
+                                <Badge variant={getStatusBadge(appointment.status).variant} className="text-[10px] sm:text-xs">
+                                  {getStatusBadge(appointment.status).label}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </CardContent>
                 </Card>
               )}
@@ -673,7 +679,7 @@ export default function ReportsPage() {
           ) : userReportData ? (
             <>
               {/* Cards de resumo */}
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 <ReportCard
                   title="Total de Usuários"
                   value={userReportData.total}
@@ -698,40 +704,40 @@ export default function ReportsPage() {
               {/* Cards por role */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Por Cargo</CardTitle>
+                  <CardTitle className="text-base sm:text-lg">Por Cargo</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <div className="text-center p-4 rounded-lg border bg-yellow-50">
-                      <div className="flex items-center justify-center mb-2">
-                        <Crown className="h-8 w-8 text-yellow-600" />
+                  <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+                    <div className="text-center p-2 sm:p-3 lg:p-4 rounded-lg border bg-yellow-50">
+                      <div className="flex items-center justify-center mb-1 sm:mb-2">
+                        <Crown className="h-4 w-4 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-yellow-600" />
                       </div>
-                      <div className="text-2xl font-bold text-yellow-800">{userReportData.byRole.OWNER}</div>
-                      <div className="text-sm text-yellow-600">Owners</div>
+                      <div className="text-lg sm:text-xl lg:text-2xl font-bold text-yellow-800">{userReportData.byRole.OWNER}</div>
+                      <div className="text-[10px] sm:text-xs lg:text-sm text-yellow-600">Owners</div>
                     </div>
                     
-                    <div className="text-center p-4 rounded-lg border bg-purple-50">
-                      <div className="flex items-center justify-center mb-2">
-                        <Shield className="h-8 w-8 text-purple-600" />
+                    <div className="text-center p-2 sm:p-3 lg:p-4 rounded-lg border bg-purple-50">
+                      <div className="flex items-center justify-center mb-1 sm:mb-2">
+                        <Shield className="h-4 w-4 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-purple-600" />
                       </div>
-                      <div className="text-2xl font-bold text-purple-800">{userReportData.byRole.ADMIN}</div>
-                      <div className="text-sm text-purple-600">Admins</div>
+                      <div className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-800">{userReportData.byRole.ADMIN}</div>
+                      <div className="text-[10px] sm:text-xs lg:text-sm text-purple-600">Admins</div>
                     </div>
                     
-                    <div className="text-center p-4 rounded-lg border bg-blue-50">
-                      <div className="flex items-center justify-center mb-2">
-                        <Stethoscope className="h-8 w-8 text-blue-600" />
+                    <div className="text-center p-2 sm:p-3 lg:p-4 rounded-lg border bg-blue-50">
+                      <div className="flex items-center justify-center mb-1 sm:mb-2">
+                        <Stethoscope className="h-4 w-4 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-blue-600" />
                       </div>
-                      <div className="text-2xl font-bold text-blue-800">{userReportData.byRole.DENTIST}</div>
-                      <div className="text-sm text-blue-600">Dentistas</div>
+                      <div className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-800">{userReportData.byRole.DENTIST}</div>
+                      <div className="text-[10px] sm:text-xs lg:text-sm text-blue-600">Dentistas</div>
                     </div>
                     
-                    <div className="text-center p-4 rounded-lg border bg-green-50">
-                      <div className="flex items-center justify-center mb-2">
-                        <Headphones className="h-8 w-8 text-green-600" />
+                    <div className="text-center p-2 sm:p-3 lg:p-4 rounded-lg border bg-green-50">
+                      <div className="flex items-center justify-center mb-1 sm:mb-2">
+                        <Headphones className="h-4 w-4 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-green-600" />
                       </div>
-                      <div className="text-2xl font-bold text-green-800">{userReportData.byRole.RECEPTIONIST}</div>
-                      <div className="text-sm text-green-600">Recepcionistas</div>
+                      <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-800">{userReportData.byRole.RECEPTIONIST}</div>
+                      <div className="text-[10px] sm:text-xs lg:text-sm text-green-600">Recepcionistas</div>
                     </div>
                   </div>
                 </CardContent>
@@ -739,59 +745,62 @@ export default function ReportsPage() {
 
               {/* Tabela de usuários */}
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Lista de Usuários</CardTitle>
+                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <CardTitle className="text-base sm:text-lg">Lista de Usuários</CardTitle>
                   <ExportButton
                     data={userReportData.users}
                     columns={userExportColumns}
                     filename="relatorio_usuarios"
+                    className="w-full sm:w-auto"
                   />
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-0 sm:p-6">
                   {userReportData.users.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       Nenhum usuário encontrado
                     </div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Nome</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Cargo</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Data Cadastro</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {userReportData.users.map((user) => {
-                          const roleBadge = getRoleBadge(user.role)
-                          const statusBadge = getUserStatusBadge(user.isActive)
-                          const RoleIcon = roleBadge.icon
-                          
-                          return (
-                            <TableRow key={user.id}>
-                              <TableCell className="font-medium">{user.name}</TableCell>
-                              <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                              <TableCell>
-                                <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border ${roleBadge.color}`}>
-                                  <RoleIcon className="h-3 w-3" />
-                                  {roleBadge.label}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border ${statusBadge.color}`}>
-                                  {statusBadge.label}
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-muted-foreground">
-                                {format(new Date(user.createdAt), 'dd/MM/yyyy', { locale: ptBR })}
-                              </TableCell>
-                            </TableRow>
-                          )
-                        })}
-                      </TableBody>
-                    </Table>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-xs sm:text-sm">Nome</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Email</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Cargo</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Status</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Data Cadastro</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {userReportData.users.map((user) => {
+                            const roleBadge = getRoleBadge(user.role)
+                            const statusBadge = getUserStatusBadge(user.isActive)
+                            const RoleIcon = roleBadge.icon
+                            
+                            return (
+                              <TableRow key={user.id}>
+                                <TableCell className="font-medium text-xs sm:text-sm">{user.name}</TableCell>
+                                <TableCell className="text-muted-foreground text-xs sm:text-sm">{user.email}</TableCell>
+                                <TableCell>
+                                  <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] sm:text-xs font-medium border ${roleBadge.color}`}>
+                                    <RoleIcon className="h-3 w-3" />
+                                    {roleBadge.label}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className={`inline-flex items-center px-2 py-1 rounded-md text-[10px] sm:text-xs font-medium border ${statusBadge.color}`}>
+                                    {statusBadge.label}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-muted-foreground text-xs sm:text-sm">
+                                  {format(new Date(user.createdAt), 'dd/MM/yyyy', { locale: ptBR })}
+                                </TableCell>
+                              </TableRow>
+                            )
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -821,7 +830,7 @@ export default function ReportsPage() {
           ) : patientReportData ? (
             <>
               {/* Cards de resumo */}
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+              <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                 <ReportCard
                   title="Total de Pacientes"
                   value={patientReportData.total}
@@ -862,60 +871,63 @@ export default function ReportsPage() {
 
               {/* Tabela de pacientes */}
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Lista de Pacientes</CardTitle>
+                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <CardTitle className="text-base sm:text-lg">Lista de Pacientes</CardTitle>
                   <ExportButton
                     data={patientReportData.patients}
                     columns={patientExportColumns}
                     filename="relatorio_pacientes"
+                    className="w-full sm:w-auto"
                   />
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-0 sm:p-6">
                   {patientReportData.patients.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       Nenhum paciente encontrado
                     </div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Nome</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Telefone</TableHead>
-                          <TableHead>CPF</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Data Cadastro</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {patientReportData.patients.map((patient) => {
-                          const statusBadge = getUserStatusBadge(patient.isActive)
-                          
-                          return (
-                            <TableRow key={patient.id}>
-                              <TableCell className="font-medium">{patient.name}</TableCell>
-                              <TableCell className="text-muted-foreground">
-                                {patient.email || '-'}
-                              </TableCell>
-                              <TableCell className="text-muted-foreground">
-                                {formatPhone(patient.phone)}
-                              </TableCell>
-                              <TableCell className="text-muted-foreground">
-                                {formatCPF(patient.cpf)}
-                              </TableCell>
-                              <TableCell>
-                                <div className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border ${statusBadge.color}`}>
-                                  {statusBadge.label}
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-muted-foreground">
-                                {format(new Date(patient.createdAt), 'dd/MM/yyyy', { locale: ptBR })}
-                              </TableCell>
-                            </TableRow>
-                          )
-                        })}
-                      </TableBody>
-                    </Table>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-xs sm:text-sm">Nome</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Email</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Telefone</TableHead>
+                            <TableHead className="text-xs sm:text-sm">CPF</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Status</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Data Cadastro</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {patientReportData.patients.map((patient) => {
+                            const statusBadge = getUserStatusBadge(patient.isActive)
+                            
+                            return (
+                              <TableRow key={patient.id}>
+                                <TableCell className="font-medium text-xs sm:text-sm">{patient.name}</TableCell>
+                                <TableCell className="text-muted-foreground text-xs sm:text-sm">
+                                  {patient.email || '-'}
+                                </TableCell>
+                                <TableCell className="text-muted-foreground text-xs sm:text-sm">
+                                  {formatPhone(patient.phone)}
+                                </TableCell>
+                                <TableCell className="text-muted-foreground text-xs sm:text-sm">
+                                  {formatCPF(patient.cpf)}
+                                </TableCell>
+                                <TableCell>
+                                  <div className={`inline-flex items-center px-2 py-1 rounded-md text-[10px] sm:text-xs font-medium border ${statusBadge.color}`}>
+                                    {statusBadge.label}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-muted-foreground text-xs sm:text-sm">
+                                  {format(new Date(patient.createdAt), 'dd/MM/yyyy', { locale: ptBR })}
+                                </TableCell>
+                              </TableRow>
+                            )
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -937,47 +949,52 @@ export default function ReportsPage() {
         <TabsContent value="finance" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Filtros</CardTitle>
-              <CardDescription>Em desenvolvimento</CardDescription>
+              <CardTitle className="text-base sm:text-lg">Filtros</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">Filtre por período para gerar o relatório</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap items-end gap-4">
-                <div className="flex items-center space-x-2">
-                  <label className="text-sm font-medium">Data início:</label>
-                  <Input
-                    type="date"
-                    value={financeFilters.fromDate}
-                    onChange={(e) => setFinanceFilters(prev => ({ ...prev, fromDate: e.target.value }))}
-                    className="w-[150px]"
-                  />
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs sm:text-sm font-medium">Data início:</label>
+                    <Input
+                      type="date"
+                      value={financeFilters.fromDate}
+                      onChange={(e) => setFinanceFilters(prev => ({ ...prev, fromDate: e.target.value }))}
+                      className="w-full text-xs sm:text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs sm:text-sm font-medium">Data fim:</label>
+                    <Input
+                      type="date"
+                      value={financeFilters.toDate}
+                      onChange={(e) => setFinanceFilters(prev => ({ ...prev, toDate: e.target.value }))}
+                      className="w-full text-xs sm:text-sm"
+                    />
+                  </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <label className="text-sm font-medium">Data fim:</label>
-                  <Input
-                    type="date"
-                    value={financeFilters.toDate}
-                    onChange={(e) => setFinanceFilters(prev => ({ ...prev, toDate: e.target.value }))}
-                    className="w-[150px]"
-                  />
-                </div>
-
-                <Button onClick={handleFinanceFilter} size="sm">
-                  Filtrar
-                </Button>
-
-                {(financeFilters.fromDate || financeFilters.toDate) && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setFinanceFilters({ fromDate: '', toDate: '' })
-                      fetchFinanceReport({ fromDate: '', toDate: '' })
-                    }}
-                  >
-                    Limpar filtros
+                <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                  <Button onClick={handleFinanceFilter} size="sm" className="w-full sm:w-auto">
+                    Filtrar
                   </Button>
-                )}
+
+                  {(financeFilters.fromDate || financeFilters.toDate) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setFinanceFilters({ fromDate: '', toDate: '' })
+                        fetchFinanceReport({ fromDate: '', toDate: '' })
+                      }}
+                      className="w-full sm:w-auto"
+                    >
+                      Limpar
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -992,7 +1009,7 @@ export default function ReportsPage() {
           ) : financeReportData ? (
             <>
               {/* Cards de resumo */}
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
+              <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
                 <ReportCard
                   title="Total Recebido"
                   value={formatCurrency(financeReportData.totalReceived)}
@@ -1038,43 +1055,47 @@ export default function ReportsPage() {
               {/* Top 5 Pacientes */}
               {financeReportData.topPatients.length > 0 && (
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>Top 5 Pacientes</CardTitle>
+                  <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <CardTitle className="text-base sm:text-lg">Top 5 Pacientes</CardTitle>
                     <ExportButton
                       data={financeReportData.topPatients}
                       columns={financeExportColumns}
                       filename="top_pacientes_financeiro"
+                      className="w-full sm:w-auto"
                     />
                   </CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-16">Posição</TableHead>
-                          <TableHead>Paciente</TableHead>
-                          <TableHead>Total Pago</TableHead>
-                          <TableHead>Qtd Pagamentos</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {financeReportData.topPatients.map((patient, index) => (
-                          <TableRow key={patient.patientId}>
-                            <TableCell className="font-medium">
-                              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold">
-                                {index + 1}
-                              </div>
-                            </TableCell>
-                            <TableCell className="font-medium">{patient.patientName}</TableCell>
-                            <TableCell className="font-medium text-green-600">
-                              {formatCurrency(patient.total)}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {patient.count} pagamento{patient.count !== 1 ? 's' : ''}
-                            </TableCell>
+                  <CardContent className="p-0 sm:p-6">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-16 text-xs sm:text-sm">Posição</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Paciente</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Total Pago</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Qtd Pagamentos</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {financeReportData.topPatients.map((patient, index) => (
+                            <TableRow key={patient.patientId}>
+                              <TableCell className="font-medium">
+                                <div className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary/10 text-primary text-xs sm:text-sm font-bold">
+                                  {index + 1}
+                                </div>
+                              </TableCell>
+                              <TableCell className="font-medium text-xs sm:text-sm">{patient.patientName}</TableCell>
+                              <TableCell className="font-medium text-green-600 text-xs sm:text-sm">
+                                {formatCurrency(patient.total)}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground text-xs sm:text-sm">
+                                {patient.count} <span className="hidden sm:inline">pagamento{patient.count !== 1 ? 's' : ''}</span>
+                                <span className="sm:hidden">pag.</span>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </CardContent>
                 </Card>
               )}

@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { UserRole } from '@prisma/client';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -238,44 +239,47 @@ export default function RecordDetailsPage({ params }: RecordDetailsPageProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleBack}
-          className="flex items-center gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Voltar
-        </Button>
-        <div className="h-6 w-px bg-border" />
-        <div className="flex items-center gap-3">
-          <FileText className="h-6 w-6 text-primary" />
-          <h1 className="text-3xl font-bold tracking-tight">Prontuário</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleBack}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span className="hidden sm:inline">Voltar</span>
+            <span className="sm:hidden">Voltar</span>
+          </Button>
+          <div className="h-6 w-px bg-border" />
+          <div className="flex items-center gap-3">
+            <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Prontuário</h1>
+          </div>
         </div>
       </div>
 
       {/* General Information Card */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <User className="h-5 w-5" />
             Informações Gerais
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-6 md:grid-cols-2">
+        <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 grid gap-6 grid-cols-1 md:grid-cols-2">
           <div className="space-y-4">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Data do Registro</p>
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground">Data do Registro</p>
               <p className="text-sm">
                 {format(new Date(record.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
               </p>
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Paciente</p>
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground">Paciente</p>
               <Button
                 variant="link"
-                className="p-0 h-auto text-sm font-normal text-primary hover:underline"
+                className="p-0 h-auto text-sm font-normal text-primary hover:underline text-left whitespace-normal"
                 onClick={handlePatientClick}
               >
                 {record.patient.name}
@@ -284,7 +288,7 @@ export default function RecordDetailsPage({ params }: RecordDetailsPageProps) {
           </div>
           <div className="space-y-4">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Dentista</p>
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground">Dentista</p>
               <div className="text-sm">
                 <p className="font-medium">Dr(a). {record.dentist.user.name}</p>
                 {record.dentist.specialty && (
@@ -294,7 +298,7 @@ export default function RecordDetailsPage({ params }: RecordDetailsPageProps) {
             </div>
             {record.appointment && (
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Consulta Vinculada</p>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Consulta Vinculada</p>
                 <p className="text-sm">
                   {format(new Date(record.appointment.date), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                 </p>
@@ -306,13 +310,13 @@ export default function RecordDetailsPage({ params }: RecordDetailsPageProps) {
 
       {/* Description Card */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <FileText className="h-5 w-5" />
             Descrição do Atendimento
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
           <p className="text-sm whitespace-pre-wrap leading-relaxed">
             {record.description}
           </p>
@@ -321,40 +325,60 @@ export default function RecordDetailsPage({ params }: RecordDetailsPageProps) {
 
       {/* Procedures Card */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <Stethoscope className="h-5 w-5" />
             Procedimentos Realizados
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
           {procedures.length > 0 ? (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Código</TableHead>
-                    <TableHead>Descrição</TableHead>
-                    <TableHead>Dente</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {procedures.map((procedure, index) => (
-                    <TableRow key={index}>
-                      <TableCell className="font-medium">
-                        {procedure.code}
-                      </TableCell>
-                      <TableCell>
-                        {procedure.description}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {procedure.tooth || '-'}
-                      </TableCell>
+            <>
+              {/* Mobile Card View for Procedures */}
+              <div className="grid grid-cols-1 gap-4 md:hidden">
+                {procedures.map((procedure, index) => (
+                  <div key={index} className="p-3 bg-slate-50 dark:bg-slate-800/50 border rounded-lg space-y-1">
+                    <div className="flex justify-between items-start">
+                      <span className="text-xs font-bold text-primary">{procedure.code}</span>
+                      {procedure.tooth && (
+                        <Badge variant="outline" className="text-[10px]">
+                          Dente {procedure.tooth}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm">{procedure.description}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Tablet/Desktop View for Procedures */}
+              <div className="hidden md:block rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Código</TableHead>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead>Dente</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {procedures.map((procedure, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium">
+                          {procedure.code}
+                        </TableCell>
+                        <TableCell>
+                          {procedure.description}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {procedure.tooth || '-'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           ) : (
             <div className="text-center py-8">
               <Stethoscope className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -366,18 +390,20 @@ export default function RecordDetailsPage({ params }: RecordDetailsPageProps) {
 
       {/* Odontogram Card */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <Calendar className="h-5 w-5" />
             Odontograma
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
           {odontogram && Object.keys(odontogram).length > 0 ? (
-            <Odontogram
-              data={odontogram}
-              readOnly={true}
-            />
+            <div className="w-full">
+              <Odontogram
+                data={odontogram}
+                readOnly={true}
+              />
+            </div>
           ) : (
             <div className="text-center py-8">
               <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />

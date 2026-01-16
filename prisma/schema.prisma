@@ -207,10 +207,11 @@ model TreatmentPlan {
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
 
-  clinic  Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  patient Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  dentist Dentist         @relation(fields: [dentistId], references: [id], onDelete: Cascade)
-  items   TreatmentItem[]
+  clinic                Clinic                 @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  patient               Patient                @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  dentist               Dentist                @relation(fields: [dentistId], references: [id], onDelete: Cascade)
+  items                 TreatmentItem[]
+  paymentTreatmentPlans PaymentTreatmentPlan[]
 
   @@index([clinicId])
   @@index([clinicId, patientId])
@@ -241,12 +242,28 @@ model Payment {
   description String?
   createdAt   DateTime      @default(now())
 
-  clinic  Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  patient Patient? @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  clinic                Clinic                 @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  patient               Patient?               @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  paymentTreatmentPlans PaymentTreatmentPlan[]
 
   @@index([clinicId])
   @@index([clinicId, createdAt])
   @@map("payments")
+}
+
+model PaymentTreatmentPlan {
+  id              String   @id @default(cuid())
+  paymentId       String
+  treatmentPlanId String
+  createdAt       DateTime @default(now())
+
+  payment       Payment       @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  treatmentPlan TreatmentPlan @relation(fields: [treatmentPlanId], references: [id], onDelete: Cascade)
+
+  @@unique([paymentId, treatmentPlanId])
+  @@index([paymentId])
+  @@index([treatmentPlanId])
+  @@map("payment_treatment_plans")
 }
 
 model Subscription {
