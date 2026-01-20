@@ -1,10 +1,10 @@
 import { UserRole } from '@prisma/client'
 import { dentistRepository } from '../infra/dentist.repository'
 import { userRepository } from '@/modules/users/infra/user.repository'
-import { 
-  createDentistSchema, 
-  CreateDentistInput, 
-  DentistOutput 
+import {
+  createDentistSchema,
+  CreateDentistInput,
+  DentistOutput
 } from '../domain/dentist.schema'
 
 export interface CreateDentistParams {
@@ -17,7 +17,6 @@ export interface CreateDentistResult {
   success: boolean
   data?: DentistOutput
   error?: string
-  warning?: string
 }
 
 /**
@@ -81,10 +80,12 @@ export async function createDentist(params: CreateDentistParams): Promise<Create
       }
     }
 
-    // Alertar se user não tem role DENTIST (mas não impedir criação)
-    let warning: string | undefined
+    // Regra de negócio: Apenas usuários com role DENTIST podem ser dentistas
     if (user.role !== UserRole.DENTIST) {
-      warning = `Atenção: O usuário tem o cargo "${user.role}" mas está sendo cadastrado como dentista. Considere alterar o cargo do usuário para "DENTIST".`
+      return {
+        success: false,
+        error: 'Apenas usuários com cargo DENTIST podem ser cadastrados como dentistas'
+      }
     }
 
     // Criar dentista
@@ -92,8 +93,7 @@ export async function createDentist(params: CreateDentistParams): Promise<Create
 
     return {
       success: true,
-      data: newDentist,
-      warning
+      data: newDentist
     }
 
   } catch (error) {

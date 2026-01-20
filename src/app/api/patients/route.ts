@@ -10,12 +10,17 @@ export async function GET(request: NextRequest) {
   try {
     // Verificar autenticação
     const session = await auth()
+    console.log('Session:', session ? 'Authenticated' : 'Not authenticated')
+
     if (!session?.user?.clinicId) {
+      console.error('Authentication failed - No session or clinicId')
       return NextResponse.json(
         { success: false, error: 'Não autenticado' },
         { status: 401 }
       )
     }
+
+    console.log('Fetching patients for clinic:', session.user.clinicId)
 
     // Ler query parameters
     const { searchParams } = new URL(request.url)
@@ -31,16 +36,22 @@ export async function GET(request: NextRequest) {
       filters.search = search.trim()
     }
 
+    console.log('Filters:', filters)
+
     // Chamar use case
     const result = await listPatients({
       clinicId: session.user.clinicId,
       filters: Object.keys(filters).length > 0 ? filters : undefined
     })
 
+    console.log('Patients fetched successfully:', result.data.length)
     return NextResponse.json(result)
 
   } catch (error) {
     console.error('Erro ao listar pacientes:', error)
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+    console.error('Error message:', error instanceof Error ? error.message : String(error))
+
     return NextResponse.json(
       { success: false, error: 'Erro interno do servidor' },
       { status: 500 }

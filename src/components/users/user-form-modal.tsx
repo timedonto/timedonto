@@ -69,13 +69,13 @@ const roleOptions = [
 export function UserFormModal({ open, onOpenChange, user, onSuccess }: UserFormModalProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  
+
   const isEditing = !!user
   const title = isEditing ? 'Editar Usuário' : 'Novo Usuário'
 
   // Configurar formulário baseado no modo (criar/editar)
   const schema = isEditing ? updateUserFormSchema : createUserFormSchema
-  
+
   const form = useForm<CreateUserFormData | UpdateUserFormData>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -153,7 +153,8 @@ export function UserFormModal({ open, onOpenChange, user, onSuccess }: UserFormM
       const result = await response.json()
 
       if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Erro ao salvar usuário')
+        setError(result.error || 'Erro ao salvar usuário')
+        return
       }
 
       // Sucesso

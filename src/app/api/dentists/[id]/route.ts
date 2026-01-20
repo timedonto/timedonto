@@ -10,7 +10,7 @@ import { dentistRepository } from '@/modules/dentists/infra/dentist.repository'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verificar autenticação
@@ -22,7 +22,7 @@ export async function GET(
       )
     }
 
-    const dentistId = params.id
+    const { id: dentistId } = await params
 
     // Buscar dentista
     const dentist = await dentistRepository.findById(dentistId, session.user.clinicId)
@@ -31,6 +31,18 @@ export async function GET(
       return NextResponse.json(
         { success: false, error: 'Dentista não encontrado' },
         { status: 404 }
+      )
+    }
+
+    // Controle de acesso: apenas OWNER/ADMIN ou o próprio dentista
+    const userRole = session.user.role as UserRole
+    const isOwnerOrAdmin = userRole === UserRole.OWNER || userRole === UserRole.ADMIN
+    const isOwnProfile = session.user.id === dentist.userId
+
+    if (!isOwnerOrAdmin && !isOwnProfile) {
+      return NextResponse.json(
+        { success: false, error: 'Acesso negado' },
+        { status: 403 }
       )
     }
 
@@ -54,7 +66,7 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verificar autenticação
@@ -75,7 +87,7 @@ export async function PATCH(
       )
     }
 
-    const dentistId = params.id
+    const { id: dentistId } = await params
 
     // Ler e validar body
     let body
@@ -102,7 +114,7 @@ export async function PATCH(
     } else {
       // Determinar status code baseado no tipo de erro
       let statusCode = 400
-      
+
       if (result.error?.includes('não encontrado')) {
         statusCode = 404
       } else if (result.error?.includes('Permissão') || result.error?.includes('não podem')) {
@@ -127,7 +139,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verificar autenticação
@@ -148,7 +160,7 @@ export async function DELETE(
       )
     }
 
-    const dentistId = params.id
+    const { id: dentistId } = await params
 
     // Verificar se dentista existe antes de tentar deletar
     const existingDentist = await dentistRepository.findById(dentistId, session.user.clinicId)
@@ -156,6 +168,18 @@ export async function DELETE(
       return NextResponse.json(
         { success: false, error: 'Dentista não encontrado' },
         { status: 404 }
+      )
+    }
+
+    // Verificar se pode deletar (sem vínculos)
+    const canDeleteCheck = await dentistRepository.canDelete(dentistId, session.user.clinicId)
+    if (!canDeleteCheck.canDelete) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Não é possível excluir dentista. ${canDeleteCheck.reason}`
+        },
+        { status: 400 }
       )
     }
 

@@ -18,7 +18,7 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth
 
   const isPublicRoute = publicRoutes.includes(nextUrl.pathname)
-  const isPublicApiRoute = publicApiRoutes.some(route => 
+  const isPublicApiRoute = publicApiRoutes.some(route =>
     nextUrl.pathname.startsWith(route)
   )
   const isApiRoute = nextUrl.pathname.startsWith('/api')
@@ -52,3 +52,5 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
+
+export const runtime = 'nodejs'

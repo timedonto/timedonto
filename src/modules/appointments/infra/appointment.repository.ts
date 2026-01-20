@@ -8,7 +8,7 @@ import {
 } from '../domain/appointment.schema'
 
 export class AppointmentRepository {
-  
+
   /**
    * Lista agendamentos de uma clínica com filtros opcionais
    */
@@ -36,7 +36,7 @@ export class AppointmentRepository {
       const date = new Date(filters.date)
       const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate())
       const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1)
-      
+
       where.date = {
         gte: startOfDay,
         lt: endOfDay
@@ -44,15 +44,15 @@ export class AppointmentRepository {
     } else {
       // Filtros de intervalo de datas
       const dateFilter: any = {}
-      
+
       if (filters?.dateFrom) {
         dateFilter.gte = new Date(filters.dateFrom)
       }
-      
+
       if (filters?.dateTo) {
         dateFilter.lte = new Date(filters.dateTo)
       }
-      
+
       if (Object.keys(dateFilter).length > 0) {
         where.date = dateFilter
       }
@@ -143,6 +143,8 @@ export class AppointmentRepository {
         durationMinutes: data.durationMinutes,
         status: data.status,
         procedure: data.procedure || null,
+        procedureId: (data as any).procedureId || null,
+        procedureSnapshot: (data as any).procedureSnapshot || null,
         notes: data.notes || null,
       },
       include: {
@@ -177,8 +179,8 @@ export class AppointmentRepository {
   /**
    * Atualiza um agendamento existente
    */
-  async update(id: string, clinicId: string, data: UpdateAppointmentInput): Promise<AppointmentOutput | null> {
-    const updateData: Prisma.AppointmentUpdateInput = {}
+  async update(id: string, clinicId: string, data: UpdateAppointmentInput): Promise<AppointmentOutput | null | any> {
+    const updateData: any = {}
 
     if (data.dentistId !== undefined) {
       updateData.dentistId = data.dentistId
@@ -208,10 +210,20 @@ export class AppointmentRepository {
       updateData.notes = data.notes || null
     }
 
+    // P0.2 - Suporte para procedureId e procedureSnapshot
+    if ((data as any).procedureId !== undefined) {
+      updateData.procedureId = (data as any).procedureId || null
+    }
+
+    if ((data as any).procedureSnapshot !== undefined) {
+      updateData.procedureSnapshot = (data as any).procedureSnapshot || null
+    }
+
+    // P0.3 - CRÍTICO: Validar clinicId para garantir isolamento multi-tenant
     const appointment = await prisma.appointment.update({
       where: {
         id,
-        clinicId
+        clinicId  // Garantir que o agendamento pertence à clínica
       },
       data: updateData,
       include: {
@@ -254,50 +266,6 @@ export class AppointmentRepository {
     excludeId?: string
   ): Promise<boolean> {
     const appointmentDate = new Date(date)
-    const endDate = new Date(appointmentDate.getTime() + (durationMinutes * 60 * 1000))
-
-    const where: Prisma.AppointmentWhereInput = {
-      clinicId,
-      dentistId,
-      status: {
-        in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED]
-      },
-      OR: [
-        // Agendamento que inicia durante o período
-        {
-          date: {
-            gte: appointmentDate,
-            lt: endDate
-          }
-        },
-        // Agendamento que termina durante o período
-        {
-          AND: [
-            {
-              date: {
-                lt: appointmentDate
-              }
-            },
-            // Calculamos o fim do agendamento existente usando SQL raw
-            {
-              id: {
-                in: {
-                  // Subquery para encontrar agendamentos que terminam após o início do novo
-                  // Esta é uma aproximação - idealmente usaríamos SQL raw para cálculo preciso
-                }
-              }
-            }
-          ]
-        }
-      ]
-    }
-
-    // Se estamos atualizando, excluir o próprio agendamento
-    if (excludeId) {
-      where.id = {
-        not: excludeId
-      }
-    }
 
     // Para uma verificação mais precisa de conflito, vamos buscar todos os agendamentos do dentista no dia
     // e verificar conflitos em memória
@@ -313,7 +281,7 @@ export class AppointmentRepository {
           lt: dayEnd
         },
         status: {
-          in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED]
+          in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED, AppointmentStatus.RESCHEDULED]
         },
         ...(excludeId && { id: { not: excludeId } })
       },
@@ -331,7 +299,7 @@ export class AppointmentRepository {
       const newStart = appointmentDate.getTime()
       const newEnd = newStart + (durationMinutes * 60 * 1000)
 
-      // Verifica se há sobreposição
+      // Verifica se há sobreposição (sem contar as bordas exatas)
       if (
         (newStart >= existingStart && newStart < existingEnd) || // Novo inicia durante existente
         (newEnd > existingStart && newEnd <= existingEnd) || // Novo termina durante existente
@@ -349,10 +317,7 @@ export class AppointmentRepository {
    */
   async delete(id: string, clinicId: string): Promise<AppointmentOutput | null> {
     const appointment = await prisma.appointment.update({
-      where: {
-        id,
-        clinicId
-      },
+      where: { id },
       data: {
         status: AppointmentStatus.CANCELED
       },
@@ -495,7 +460,7 @@ export class AppointmentRepository {
    */
   async findUpcoming(clinicId: string, limit: number = 10): Promise<AppointmentOutput[]> {
     const now = new Date()
-    
+
     const appointments = await prisma.appointment.findMany({
       where: {
         clinicId,
@@ -546,7 +511,7 @@ export class AppointmentRepository {
     const today = new Date()
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate())
     const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1)
-    
+
     const appointments = await prisma.appointment.findMany({
       where: {
         clinicId,

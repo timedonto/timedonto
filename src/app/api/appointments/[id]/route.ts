@@ -9,7 +9,7 @@ import { getAppointment, updateAppointment } from '@/modules/appointments/applic
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verificar autenticação
@@ -21,7 +21,7 @@ export async function GET(
       )
     }
 
-    const appointmentId = params.id
+    const { id: appointmentId } = await params
 
     // Chamar use case
     const result = await getAppointment({
@@ -60,7 +60,7 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verificar autenticação
@@ -81,7 +81,7 @@ export async function PATCH(
       )
     }
 
-    const appointmentId = params.id
+    const { id: appointmentId } = await params
 
     // Ler e validar body
     let body
@@ -107,7 +107,7 @@ export async function PATCH(
     } else {
       // Determinar status code baseado no tipo de erro
       let statusCode = 400
-      
+
       if (result.error?.includes('não encontrado')) {
         statusCode = 404
       }

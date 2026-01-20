@@ -8,13 +8,16 @@ import {
 } from '../domain/dentist.schema'
 
 export class DentistRepository {
-  
+
   /**
    * Lista dentistas de uma clínica com filtros opcionais
    */
   async findMany(clinicId: string, filters?: ListDentistsInput): Promise<DentistOutput[]> {
     const where: Prisma.DentistWhereInput = {
       clinicId,
+      user: {
+        isActive: true
+      }
     }
 
     // Aplicar filtros
@@ -35,6 +38,7 @@ export class DentistRepository {
         },
         {
           user: {
+            isActive: true,
             name: {
               contains: filters.search,
               mode: 'insensitive'
@@ -43,6 +47,7 @@ export class DentistRepository {
         },
         {
           user: {
+            isActive: true,
             email: {
               contains: filters.search,
               mode: 'insensitive'
@@ -61,6 +66,11 @@ export class DentistRepository {
             name: true,
             email: true,
             isActive: true,
+          }
+        },
+        dentistProcedures: {
+          include: {
+            procedure: true
           }
         }
       },
@@ -91,6 +101,11 @@ export class DentistRepository {
             email: true,
             isActive: true,
           }
+        },
+        dentistProcedures: {
+          include: {
+            procedure: true
+          }
         }
       }
     })
@@ -115,6 +130,11 @@ export class DentistRepository {
             email: true,
             isActive: true,
           }
+        },
+        dentistProcedures: {
+          include: {
+            procedure: true
+          }
         }
       }
     })
@@ -132,8 +152,8 @@ export class DentistRepository {
         userId: data.userId,
         cro: data.cro,
         specialty: data.specialty || null,
-        workingHours: data.workingHours || null,
-        bankInfo: data.bankInfo || null,
+        workingHours: (data.workingHours as any) || null,
+        bankInfo: (data.bankInfo as any) || null,
         commission: data.commission ? new Prisma.Decimal(data.commission) : null,
       },
       include: {
@@ -143,6 +163,11 @@ export class DentistRepository {
             name: true,
             email: true,
             isActive: true,
+          }
+        },
+        dentistProcedures: {
+          include: {
+            procedure: true
           }
         }
       }
@@ -166,13 +191,11 @@ export class DentistRepository {
     }
 
     if (data.workingHours !== undefined) {
-      updateData.workingHours = data.workingHours || null
+      updateData.workingHours = (data.workingHours as any) || null
     }
-
     if (data.bankInfo !== undefined) {
-      updateData.bankInfo = data.bankInfo || null
+      updateData.bankInfo = (data.bankInfo as any) || null
     }
-
     if (data.commission !== undefined) {
       updateData.commission = data.commission ? new Prisma.Decimal(data.commission) : null
     }
@@ -191,11 +214,66 @@ export class DentistRepository {
             email: true,
             isActive: true,
           }
+        },
+        dentistProcedures: {
+          include: {
+            procedure: true
+          }
         }
       }
     })
 
     return this.mapToOutput(dentist)
+  }
+
+  /**
+   * Verifica se um dentista pode ser deletado (sem vínculos)
+   */
+  async canDelete(id: string, clinicId: string): Promise<{
+    canDelete: boolean
+    reason?: string
+  }> {
+    // Verificar agendamentos futuros
+    const futureAppointments = await prisma.appointment.count({
+      where: {
+        dentistId: id,
+        clinicId,
+        date: { gte: new Date() }
+      }
+    })
+
+    if (futureAppointments > 0) {
+      return {
+        canDelete: false,
+        reason: `Dentista possui ${futureAppointments} agendamento(s) futuro(s)`
+      }
+    }
+
+    // Verificar prontuários
+    const recordsCount = await prisma.record.count({
+      where: { dentistId: id, clinicId }
+    })
+
+    if (recordsCount > 0) {
+      return {
+        canDelete: false,
+        reason: `Dentista possui ${recordsCount} prontuário(s) registrado(s)`
+      }
+    }
+
+    // Verificar planos de tratamento
+    const treatmentPlansCount = await prisma.treatmentPlan.count({
+      where: { dentistId: id, clinicId }
+    })
+
+    if (treatmentPlansCount > 0) {
+      return {
+        canDelete: false,
+        reason: `Dentista possui ${treatmentPlansCount} plano(s) de tratamento`
+      }
+    }
+
+    return { canDelete: true }
   }
 
   /**
@@ -332,6 +410,11 @@ export class DentistRepository {
             email: true,
             isActive: true,
           }
+        },
+        dentistProcedures: {
+          include: {
+            procedure: true
+          }
         }
       },
       orderBy: {
@@ -359,7 +442,12 @@ export class DentistRepository {
       commission: dentist.commission ? Number(dentist.commission) : null,
       createdAt: dentist.createdAt,
       updatedAt: dentist.updatedAt,
-      user: dentist.user
+      user: dentist.user,
+      procedures: dentist.dentistProcedures?.map((dp: any) => ({
+        ...dp.procedure,
+        baseValue: Number(dp.procedure.baseValue),
+        commissionPercentage: Number(dp.procedure.commissionPercentage)
+      })) || []
     }
   }
 }

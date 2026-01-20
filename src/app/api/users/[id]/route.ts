@@ -10,7 +10,7 @@ import { userRepository } from '@/modules/users/infra/user.repository'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verificar autenticação
@@ -22,7 +22,19 @@ export async function GET(
       )
     }
 
-    const userId = params.id
+    const { id: userId } = await params
+
+    // Verificar permissão: apenas OWNER/ADMIN ou o próprio usuário
+    const userRole = session.user.role as UserRole
+    const isOwnProfile = session.user.id === userId
+    const hasAdminAccess = userRole === UserRole.OWNER || userRole === UserRole.ADMIN
+
+    if (!hasAdminAccess && !isOwnProfile) {
+      return NextResponse.json(
+        { success: false, error: 'Permissão insuficiente' },
+        { status: 403 }
+      )
+    }
 
     // Buscar usuário
     const user = await userRepository.findById(userId, session.user.clinicId)
@@ -54,7 +66,7 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verificar autenticação
@@ -66,7 +78,7 @@ export async function PATCH(
       )
     }
 
-    const userId = params.id
+    const { id: userId } = await params
     const userRole = session.user.role as UserRole
 
     // Ler e validar body
@@ -95,7 +107,7 @@ export async function PATCH(
     } else {
       // Determinar status code baseado no tipo de erro
       let statusCode = 400
-      
+
       if (result.error?.includes('não encontrado')) {
         statusCode = 404
       } else if (result.error?.includes('Permissão') || result.error?.includes('não podem')) {
@@ -120,7 +132,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verificar autenticação
@@ -132,7 +144,7 @@ export async function DELETE(
       )
     }
 
-    const userId = params.id
+    const { id: userId } = await params
     const userRole = session.user.role as UserRole
 
     // Chamar use case de atualização para desativar
@@ -153,7 +165,7 @@ export async function DELETE(
     } else {
       // Determinar status code baseado no tipo de erro
       let statusCode = 400
-      
+
       if (result.error?.includes('não encontrado')) {
         statusCode = 404
       } else if (result.error?.includes('Permissão') || result.error?.includes('não podem')) {

@@ -1,8 +1,9 @@
+import { AppointmentStatus } from '@prisma/client'
 import { appointmentRepository } from '../infra/appointment.repository'
-import { 
-  updateAppointmentSchema, 
-  UpdateAppointmentInput, 
-  AppointmentOutput 
+import {
+  updateAppointmentSchema,
+  UpdateAppointmentInput,
+  AppointmentOutput
 } from '../domain/appointment.schema'
 
 export interface UpdateAppointmentParams {
@@ -35,30 +36,41 @@ export async function updateAppointment(params: UpdateAppointmentParams): Promis
 
     const validatedData = validation.data
 
-    // Regra de negócio: Se está alterando data/hora ou dentista, verificar conflito
-    if (validatedData.date || validatedData.durationMinutes || validatedData.dentistId) {
-      // Buscar agendamento atual para obter dados necessários para verificação
-      const currentAppointment = await appointmentRepository.findById(id, clinicId)
-      
-      if (!currentAppointment) {
+    // P0.2 - CRÍTICO: Buscar agendamento atual para comparar mudanças
+    const currentAppointment = await appointmentRepository.findById(id, clinicId)
+    if (!currentAppointment) {
+      return {
+        success: false,
+        error: 'Agendamento não encontrado'
+      }
+    }
+
+    // P0.2 - Validar dentista se mudou
+    if (validatedData.dentistId && validatedData.dentistId !== currentAppointment.dentistId) {
+      const { dentistRepository } = await import('@/modules/dentists/infra/dentist.repository')
+      const dentist = await dentistRepository.findById(validatedData.dentistId, clinicId)
+
+      if (!dentist) {
         return {
           success: false,
-          error: 'Agendamento não encontrado'
+          error: 'Dentista não encontrado'
         }
       }
 
-      // Usar dados atuais como fallback se não foram fornecidos na atualização
-      const dentistId = validatedData.dentistId || currentAppointment.dentistId
-      const date = validatedData.date || currentAppointment.date.toISOString()
-      const durationMinutes = validatedData.durationMinutes || currentAppointment.durationMinutes
+      if (!dentist.user.isActive) {
+        return {
+          success: false,
+          error: 'Não é possível alterar para dentista inativo'
+        }
+      }
 
-      // Verificar conflito excluindo o próprio agendamento
+      // Verificar conflito com novo dentista
       const hasConflict = await appointmentRepository.checkConflict(
         clinicId,
-        dentistId,
-        date,
-        durationMinutes,
-        id // Excluir o próprio ID da verificação
+        validatedData.dentistId,
+        validatedData.date || currentAppointment.date.toISOString(),
+        validatedData.durationMinutes || currentAppointment.durationMinutes,
+        id // Excluir o próprio agendamento
       )
 
       if (hasConflict) {
@@ -69,13 +81,88 @@ export async function updateAppointment(params: UpdateAppointmentParams): Promis
       }
     }
 
+    // P0.2 - Validar paciente se mudou
+    if (validatedData.patientId && validatedData.patientId !== currentAppointment.patientId) {
+      const { prisma } = await import('@/lib/database')
+      const patient = await prisma.patient.findFirst({
+        where: {
+          id: validatedData.patientId,
+          clinicId
+        }
+      })
+
+      if (!patient) {
+        return {
+          success: false,
+          error: 'Paciente não encontrado'
+        }
+      }
+
+      if (!patient.isActive) {
+        return {
+          success: false,
+          error: 'Não é possível alterar para paciente inativo'
+        }
+      }
+    }
+
+    // P0.2 - Validar conflito se data ou duração mudou
+    const dateChanged = validatedData.date && validatedData.date !== currentAppointment.date.toISOString()
+    const durationChanged = validatedData.durationMinutes && validatedData.durationMinutes !== currentAppointment.durationMinutes
+
+    if (dateChanged || durationChanged) {
+      const hasConflict = await appointmentRepository.checkConflict(
+        clinicId,
+        validatedData.dentistId || currentAppointment.dentistId,
+        validatedData.date || currentAppointment.date.toISOString(),
+        validatedData.durationMinutes || currentAppointment.durationMinutes,
+        id // Excluir o próprio agendamento
+      )
+
+      if (hasConflict) {
+        return {
+          success: false,
+          error: 'Já existe um agendamento neste horário para este dentista'
+        }
+      }
+    }
+
+    // P0.2 - Validar procedimento se mudou e criar novo snapshot
+    let updateData: any = { ...validatedData }
+
+    if (validatedData.procedureId) {
+      const { procedureRepository } = await import('@/modules/procedures/infra/procedure.repository')
+      const procedure = await procedureRepository.findById(validatedData.procedureId, clinicId)
+
+      if (!procedure) {
+        return {
+          success: false,
+          error: 'Procedimento não encontrado ou não pertence a esta clínica'
+        }
+      }
+
+      if (!procedure.isActive) {
+        return {
+          success: false,
+          error: 'Não é possível alterar para procedimento inativo'
+        }
+      }
+
+      // Criar novo snapshot
+      updateData.procedureSnapshot = {
+        name: procedure.name,
+        baseValue: procedure.baseValue,
+        commissionPercentage: procedure.commissionPercentage
+      }
+    }
+
     // Atualizar agendamento
-    const updatedAppointment = await appointmentRepository.update(id, clinicId, validatedData)
+    const updatedAppointment = await appointmentRepository.update(id, clinicId, updateData)
 
     if (!updatedAppointment) {
       return {
         success: false,
-        error: 'Agendamento não encontrado'
+        error: 'Erro ao atualizar agendamento'
       }
     }
 

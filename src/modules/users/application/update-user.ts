@@ -71,6 +71,22 @@ export async function updateUser(params: UpdateUserParams): Promise<UpdateUserRe
       }
     }
 
+    // Regra de negócio: Usuário não pode desativar a própria conta
+    if (currentUserId === userId && validatedData.isActive === false) {
+      return {
+        success: false,
+        error: 'Você não pode desativar sua própria conta'
+      }
+    }
+
+    // Regra de negócio: Usuário não pode alterar o próprio cargo
+    if (currentUserId === userId && validatedData.role && validatedData.role !== targetUser.role) {
+      return {
+        success: false,
+        error: 'Você não pode alterar seu próprio cargo'
+      }
+    }
+
     // Regra de negócio: Não pode desativar/rebaixar o único OWNER
     if (targetUser.role === UserRole.OWNER) {
       const isOnlyOwner = await userRepository.isOnlyOwner(userId, clinicId)

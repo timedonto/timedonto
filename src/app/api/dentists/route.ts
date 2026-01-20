@@ -93,17 +93,10 @@ export async function POST(request: NextRequest) {
 
     // Retornar resultado
     if (result.success) {
-      // Se há warning, incluir na resposta mas manter status 201
-      const response: any = {
+      return NextResponse.json({
         success: result.success,
         data: result.data
-      }
-      
-      if (result.warning) {
-        response.warning = result.warning
-      }
-
-      return NextResponse.json(response, { status: 201 })
+      }, { status: 201 })
     } else {
       return NextResponse.json(result, { status: 400 })
     }

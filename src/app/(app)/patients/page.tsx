@@ -1,21 +1,8 @@
 "use client"
 
-import { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Pencil, Loader2, Search } from 'lucide-react'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { PatientsClient } from './client'
 import { PatientFormModal } from '@/components/patients/patient-form-modal'
 import { PatientOutput } from '@/modules/patients/domain/patient.schema'
 
@@ -54,24 +41,8 @@ export default function PatientsPage() {
   const [patients, setPatients] = useState<PatientOutput[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [searchTerm, setSearchTerm] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedPatient, setSelectedPatient] = useState<PatientOutput | undefined>(undefined)
-
-  // Filtrar pacientes baseado no termo de busca
-  const filteredPatients = useMemo(() => {
-    if (!searchTerm.trim()) {
-      return patients
-    }
-
-    const term = searchTerm.toLowerCase().trim()
-    return patients.filter(patient => 
-      patient.name.toLowerCase().includes(term) ||
-      patient.email?.toLowerCase().includes(term) ||
-      patient.phone?.toLowerCase().includes(term) ||
-      patient.cpf?.toLowerCase().includes(term)
-    )
-  }, [patients, searchTerm])
 
   // Carregar pacientes
   const fetchPatients = async () => {
@@ -80,9 +51,21 @@ export default function PatientsPage() {
       setError(null)
 
       const response = await fetch('/api/patients')
-      const data: ApiResponse = await response.json()
+
+      // Log the response for debugging
+      console.log('API Response Status:', response.status)
+
+      let data: ApiResponse
+      try {
+        data = await response.json()
+        console.log('API Response Data:', data)
+      } catch (parseError) {
+        console.error('Erro ao fazer parse da resposta:', parseError)
+        throw new Error('Erro ao processar resposta do servidor')
+      }
 
       if (!response.ok) {
+        console.error('API Error:', data.error)
         throw new Error(data.error || 'Erro ao carregar pacientes')
       }
 
@@ -90,19 +73,24 @@ export default function PatientsPage() {
         const convertedPatients = data.data.map(convertApiDataToPatient)
         setPatients(convertedPatients)
       } else {
-        throw new Error(data.error || 'Erro desconhecido')
+        throw new Error(data.error || 'Resposta inválida do servidor')
       }
     } catch (err) {
       console.error('Erro ao buscar pacientes:', err)
-      setError(err instanceof Error ? err.message : 'Erro ao carregar pacientes')
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar pacientes'
+      setError(errorMessage)
+      setPatients([]) // Clear patients on error
     } finally {
       setLoading(false)
     }
   }
 
+  const isMounted = React.useRef(false)
+
   // Carregar pacientes ao montar o componente
   useEffect(() => {
     fetchPatients()
+    isMounted.current = true
   }, [])
 
   // Handlers para ações
@@ -111,15 +99,12 @@ export default function PatientsPage() {
     setIsModalOpen(true)
   }
 
-  const handleEditPatient = (patientId: string) => {
-    const patient = patients.find(p => p.id === patientId)
-    if (patient) {
-      setSelectedPatient(patient)
-      setIsModalOpen(true)
-    }
+  const handleEditPatient = (patient: PatientOutput) => {
+    setSelectedPatient(patient)
+    setIsModalOpen(true)
   }
 
-  const handlePatientClick = (patientId: string) => {
+  const handleViewPatient = (patientId: string) => {
     router.push(`/patients/${patientId}`)
   }
 
@@ -127,216 +112,30 @@ export default function PatientsPage() {
     fetchPatients()
   }
 
-  // Formatar CPF para exibição
-  const formatCpf = (cpf: string | null) => {
-    if (!cpf) return '-'
-    return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
-  }
-
-  // Formatar telefone para exibição
-  const formatPhone = (phone: string | null) => {
-    if (!phone) return '-'
-    if (phone.length === 11) {
-      return phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')
-    }
-    if (phone.length === 10) {
-      return phone.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3')
-    }
-    return phone
-  }
-
   return (
-    <div className="space-y-6">
-      {/* Header da página */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Pacientes</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
-            Gerencie os pacientes da clínica
+    <>
+      {error && (
+        <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+          <p className="text-sm text-destructive font-medium">
+            {error}
           </p>
         </div>
-        <Button onClick={handleCreatePatient} className="flex items-center gap-2 w-full sm:w-auto">
-          <Plus className="h-4 w-4" />
-          <span className="inline sm:hidden lg:inline">Novo Paciente</span>
-          <span className="hidden sm:inline lg:hidden">Novo</span>
-        </Button>
-      </div>
+      )}
 
-      {/* Campo de busca */}
-      <div className="flex items-center space-x-2">
-        <div className="relative w-full md:max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nome, email, telefone ou CPF..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 w-full"
-          />
-        </div>
-      </div>
+      <PatientsClient
+        data={patients}
+        loading={loading}
+        onEdit={handleEditPatient}
+        onView={handleViewPatient}
+        onCreate={handleCreatePatient}
+      />
 
-      {/* Conteúdo principal */}
-      <div className="rounded-md">
-        {loading ? (
-          // Estado de loading
-          <div className="flex items-center justify-center py-12 border rounded-md">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Carregando pacientes...
-            </div>
-          </div>
-        ) : error ? (
-          // Estado de erro
-          <div className="flex flex-col items-center justify-center py-12 space-y-4 border rounded-md">
-            <div className="text-center">
-              <h3 className="text-lg font-semibold">Erro ao carregar pacientes</h3>
-              <p className="text-muted-foreground">{error}</p>
-            </div>
-            <Button onClick={fetchPatients} variant="outline">
-              Tentar novamente
-            </Button>
-          </div>
-        ) : filteredPatients.length === 0 ? (
-          // Estado vazio
-          <div className="flex flex-col items-center justify-center py-12 space-y-4 border rounded-md">
-            <div className="text-center">
-              <h3 className="text-lg font-semibold">
-                {searchTerm.trim() ? 'Nenhum paciente encontrado' : 'Nenhum paciente cadastrado'}
-              </h3>
-              <p className="text-muted-foreground">
-                {searchTerm.trim() 
-                  ? 'Tente ajustar os termos da busca'
-                  : 'Comece cadastrando o primeiro paciente da clínica'
-                }
-              </p>
-            </div>
-            {!searchTerm.trim() && (
-              <Button onClick={handleCreatePatient} className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Cadastrar Primeiro Paciente
-              </Button>
-            )}
-          </div>
-        ) : (
-          <>
-            {/* Mobile Cards View (< 768px) */}
-            <div className="grid grid-cols-1 gap-4 md:hidden">
-              {filteredPatients.map((patient) => (
-                <div 
-                  key={patient.id} 
-                  className="p-4 bg-white dark:bg-slate-900 border rounded-xl shadow-sm space-y-3 cursor-pointer hover:border-primary/50 transition-colors"
-                  onClick={() => handlePatientClick(patient.id)}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-bold text-slate-900 dark:text-slate-100">{patient.name}</h4>
-                      <p className="text-xs text-muted-foreground">{patient.email || 'Sem email'}</p>
-                    </div>
-                    <Badge variant={patient.isActive ? 'success' : 'destructive'}>
-                      {patient.isActive ? 'Ativo' : 'Inativo'}
-                    </Badge>
-                  </div>
-                  
-                  <div className="flex flex-col gap-1 text-sm">
-                    <div className="flex items-center text-muted-foreground">
-                      <span className="font-medium mr-2 text-slate-700 dark:text-slate-300">Tel:</span>
-                      {formatPhone(patient.phone)}
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleEditPatient(patient.id)
-                      }}
-                      className="flex items-center gap-2 h-8"
-                    >
-                      <Pencil className="h-3 w-3" />
-                      Editar
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Tablet/Desktop Table View (>= 768px) */}
-            <div className="hidden md:block border rounded-md overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead className="hidden lg:table-cell">Email</TableHead>
-                    <TableHead>Telefone</TableHead>
-                    <TableHead className="hidden xl:table-cell">CPF</TableHead>
-                    <TableHead className="hidden lg:table-cell">Cadastro</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredPatients.map((patient) => (
-                    <TableRow 
-                      key={patient.id}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => handlePatientClick(patient.id)}
-                    >
-                      <TableCell className="font-medium">
-                        {patient.name}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground hidden lg:table-cell">
-                        {patient.email || '-'}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {formatPhone(patient.phone)}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground hidden xl:table-cell">
-                        {formatCpf(patient.cpf)}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground hidden lg:table-cell">
-                        {format(patient.createdAt, "dd/MM/yyyy", { locale: ptBR })}
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={patient.isActive ? 'success' : 'destructive'}
-                        >
-                          {patient.isActive ? 'Ativo' : 'Inativo'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleEditPatient(patient.id)
-                            }}
-                            className="h-8 w-8 p-0"
-                          >
-                            <Pencil className="h-4 w-4" />
-                            <span className="sr-only">Editar paciente</span>
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Modal de criar/editar paciente */}
       <PatientFormModal
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
         patient={selectedPatient}
         onSuccess={handleModalSuccess}
       />
-    </div>
+    </>
   )
 }

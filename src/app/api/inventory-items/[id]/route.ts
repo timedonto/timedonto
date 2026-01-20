@@ -9,7 +9,7 @@ import { getInventoryItem, updateInventoryItem } from '@/modules/inventory/appli
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verificar autenticação
@@ -21,7 +21,7 @@ export async function GET(
       )
     }
 
-    const itemId = params.id
+    const { id: itemId } = await params
 
     // Chamar use case
     const result = await getInventoryItem({
@@ -61,7 +61,7 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verificar autenticação
@@ -82,7 +82,7 @@ export async function PATCH(
       )
     }
 
-    const itemId = params.id
+    const { id: itemId } = await params
 
     // Ler e validar body
     let body
@@ -108,7 +108,7 @@ export async function PATCH(
     } else {
       // Determinar status code baseado no tipo de erro
       let statusCode = 400
-      
+
       if (result.error?.includes('não encontrado')) {
         statusCode = 404
       }

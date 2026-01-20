@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { DentistOutput } from '@/modules/dentists/domain/dentist.schema'
+import { DentistOutput, COMMON_SPECIALTIES } from '@/modules/dentists/domain/dentist.schema'
 
 // Schema para criar dentista
 const createDentistFormSchema = z.object({
@@ -29,7 +29,7 @@ const createDentistFormSchema = z.object({
   cro: z.string()
     .min(1, 'CRO é obrigatório')
     .regex(/^CRO-[A-Z]{2}\s+\d+$/, 'CRO deve seguir o formato: CRO-SP 12345'),
-  specialty: z.string().optional(),
+  specialty: z.array(z.string()).optional(),
   commission: z.number()
     .min(0, 'Comissão deve ser no mínimo 0%')
     .max(100, 'Comissão deve ser no máximo 100%')
@@ -41,7 +41,7 @@ const updateDentistFormSchema = z.object({
   cro: z.string()
     .min(1, 'CRO é obrigatório')
     .regex(/^CRO-[A-Z]{2}\s+\d+$/, 'CRO deve seguir o formato: CRO-SP 12345'),
-  specialty: z.string().optional(),
+  specialty: z.array(z.string()).optional(),
   commission: z.number()
     .min(0, 'Comissão deve ser no mínimo 0%')
     .max(100, 'Comissão deve ser no máximo 100%')
@@ -70,21 +70,21 @@ export function DentistFormModal({ open, onOpenChange, dentist, onSuccess }: Den
   const [error, setError] = useState<string | null>(null)
   const [availableUsers, setAvailableUsers] = useState<User[]>([])
   const [loadingUsers, setLoadingUsers] = useState(false)
-  
+
   const isEditing = !!dentist
-  const title = isEditing 
-    ? `Editar Dentista - ${dentist.user.name}` 
+  const title = isEditing
+    ? `Editar Dentista - ${dentist.user.name}`
     : 'Novo Dentista'
 
   // Configurar formulário baseado no modo (criar/editar)
   const schema = isEditing ? updateDentistFormSchema : createDentistFormSchema
-  
+
   const form = useForm<CreateDentistFormData | UpdateDentistFormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       ...(isEditing ? {} : { userId: '' }),
       cro: '',
-      specialty: '',
+      specialty: [],
       commission: undefined,
     },
   })
@@ -97,7 +97,7 @@ export function DentistFormModal({ open, onOpenChange, dentist, onSuccess }: Den
 
     try {
       setLoadingUsers(true)
-      
+
       // Buscar usuários com role DENTIST
       const response = await fetch('/api/users?role=DENTIST')
       const data = await response.json()
@@ -113,7 +113,7 @@ export function DentistFormModal({ open, onOpenChange, dentist, onSuccess }: Den
         }
 
         // Filtrar usuários que ainda não são dentistas
-        const availableUsers = data.data.filter((user: User) => 
+        const availableUsers = data.data.filter((user: User) =>
           !existingDentistUserIds.includes(user.id)
         )
 
@@ -132,13 +132,13 @@ export function DentistFormModal({ open, onOpenChange, dentist, onSuccess }: Den
   useEffect(() => {
     if (isEditing && dentist) {
       setValue('cro', dentist.cro)
-      setValue('specialty', dentist.specialty || '')
+      setValue('specialty', dentist.specialty ? dentist.specialty.split(', ') : [])
       setValue('commission', dentist.commission || undefined)
     } else {
       reset({
         ...(isEditing ? {} : { userId: '' }),
         cro: '',
-        specialty: '',
+        specialty: [],
         commission: undefined,
       })
     }
@@ -252,8 +252,8 @@ export function DentistFormModal({ open, onOpenChange, dentist, onSuccess }: Den
                   </SelectContent>
                 </Select>
               )}
-              {errors.userId && (
-                <p className="text-sm text-destructive">{errors.userId.message}</p>
+              {(errors as any).userId && (
+                <p className="text-sm text-destructive">{(errors as any).userId.message}</p>
               )}
             </div>
           )}
@@ -274,15 +274,42 @@ export function DentistFormModal({ open, onOpenChange, dentist, onSuccess }: Den
 
           {/* Especialidade */}
           <div className="space-y-2">
-            <Label htmlFor="specialty">Especialidade</Label>
-            <Input
-              id="specialty"
-              {...register('specialty')}
-              placeholder="Ex: Ortodontia, Endodontia"
-              disabled={loading}
-            />
+            <Label>Especialidades</Label>
+            <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
+              {COMMON_SPECIALTIES.map((spec) => {
+                const currentSpecs = (watch('specialty') as string[]) || []
+                const isChecked = currentSpecs.includes(spec)
+
+                return (
+                  <div key={spec} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`spec-${spec}`}
+                      checked={isChecked}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setValue('specialty', [...currentSpecs, spec])
+                        } else {
+                          setValue('specialty', currentSpecs.filter((s) => s !== spec))
+                        }
+                      }}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <label
+                      htmlFor={`spec-${spec}`}
+                      className="text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      {spec}
+                    </label>
+                  </div>
+                )
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Selecione todas as especialidades do dentista.
+            </p>
             {errors.specialty && (
-              <p className="text-sm text-destructive">{errors.specialty.message}</p>
+              <p className="text-sm text-destructive">{(errors.specialty as any).message}</p>
             )}
           </div>
 
@@ -295,8 +322,8 @@ export function DentistFormModal({ open, onOpenChange, dentist, onSuccess }: Den
               min="0"
               max="100"
               step="0.1"
-              {...register('commission', { 
-                setValueAs: (value) => value === '' ? undefined : parseFloat(value) 
+              {...register('commission', {
+                setValueAs: (value) => value === '' ? undefined : parseFloat(value)
               })}
               placeholder="Ex: 15.5"
               disabled={loading}

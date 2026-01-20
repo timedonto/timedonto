@@ -2,11 +2,13 @@
 export * from './list-dentists'
 export * from './create-dentist'
 export * from './update-dentist'
+export * from './update-dentist-profile'
 
 // Re-export domain types
 export type {
   CreateDentistInput,
   UpdateDentistInput,
+  UpdateDentistProfileInput,
   ListDentistsInput,
   DentistOutput,
   GetDentistInput,
@@ -24,6 +26,7 @@ export type {
 export {
   createDentistSchema,
   updateDentistSchema,
+  updateDentistProfileSchema,
   listDentistsSchema,
   dentistIdSchema,
   clinicIdSchema,

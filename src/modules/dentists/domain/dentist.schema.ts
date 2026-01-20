@@ -1,14 +1,15 @@
 import { z } from 'zod'
+import { ProcedureOutput } from '../../procedures/domain/procedure.schema'
 
 // =====================================================================
 // HELPER SCHEMAS
 // =====================================================================
 
 // Schema para horários de trabalho (JSON flexível)
-const workingHoursSchema = z.record(z.any()).optional().nullable()
+const workingHoursSchema = z.record(z.string(), z.any()).optional().nullable()
 
 // Schema para dados bancários (JSON flexível)
-const bankInfoSchema = z.record(z.any()).optional().nullable()
+const bankInfoSchema = z.record(z.string(), z.any()).optional().nullable()
 
 // =====================================================================
 // VALIDATION SCHEMAS
@@ -25,11 +26,14 @@ export const createDentistSchema = z.object({
     .trim()
     .regex(/^CRO-[A-Z]{2}\s+\d+$/, 'CRO deve seguir o formato: CRO-SP 12345'),
   specialty: z
-    .string()
-    .min(1, 'Especialidade deve ter pelo menos 1 caractere')
-    .max(100, 'Especialidade deve ter no máximo 100 caracteres')
-    .trim()
-    .optional(),
+    .union([z.string(), z.array(z.string())])
+    .transform((val) => {
+      if (!val) return null
+      if (Array.isArray(val)) return val.filter(s => s !== 'none').join(', ')
+      return val === 'none' ? null : val
+    })
+    .optional()
+    .nullable(),
   workingHours: workingHoursSchema,
   bankInfo: bankInfoSchema,
   commission: z
@@ -48,11 +52,44 @@ export const updateDentistSchema = z.object({
     .regex(/^CRO-[A-Z]{2}\s+\d+$/, 'CRO deve seguir o formato: CRO-SP 12345')
     .optional(),
   specialty: z
+    .union([z.string(), z.array(z.string())])
+    .transform((val) => {
+      if (!val) return null
+      if (Array.isArray(val)) return val.filter(s => s !== 'none').join(', ')
+      return val === 'none' ? null : val
+    })
+    .optional()
+    .nullable(),
+  workingHours: workingHoursSchema,
+  bankInfo: bankInfoSchema,
+  commission: z
+    .number()
+    .min(0, 'Comissão deve ser no mínimo 0%')
+    .max(100, 'Comissão deve ser no máximo 100%')
+    .optional()
+})
+
+export const updateDentistProfileSchema = z.object({
+  name: z
     .string()
-    .min(1, 'Especialidade deve ter pelo menos 1 caractere')
-    .max(100, 'Especialidade deve ter no máximo 100 caracteres')
+    .min(2, 'Nome deve ter pelo menos 2 caracteres')
+    .max(100, 'Nome deve ter no máximo 100 caracteres')
     .trim()
     .optional(),
+  email: z
+    .string()
+    .email('Email deve ter um formato válido')
+    .toLowerCase()
+    .trim()
+    .optional(),
+  cro: z
+    .string()
+    .min(1, 'CRO é obrigatório')
+    .max(50, 'CRO deve ter no máximo 50 caracteres')
+    .trim()
+    .regex(/^CRO-[A-Z]{2}\s+\d+$/, 'CRO deve seguir o formato: CRO-SP 12345')
+    .optional(),
+  specialty: z.string().optional().nullable(),
   workingHours: workingHoursSchema,
   bankInfo: bankInfoSchema,
   commission: z
@@ -83,6 +120,7 @@ export const listDentistsSchema = z.object({
 
 export type CreateDentistInput = z.infer<typeof createDentistSchema>
 export type UpdateDentistInput = z.infer<typeof updateDentistSchema>
+export type UpdateDentistProfileInput = z.infer<typeof updateDentistProfileSchema>
 export type ListDentistsInput = z.infer<typeof listDentistsSchema>
 
 // =====================================================================
@@ -106,6 +144,7 @@ export interface DentistOutput {
     email: string
     isActive: boolean
   }
+  procedures: ProcedureOutput[]
 }
 
 // =====================================================================
@@ -217,11 +256,11 @@ export const structuredBankInfoSchema = z.object({
   agency: z.string().min(1, 'Agência é obrigatória').optional(),
   account: z.string().min(1, 'Conta é obrigatória').optional(),
   accountType: z.enum(['checking', 'savings'], {
-    errorMap: () => ({ message: 'Tipo de conta deve ser corrente ou poupança' })
+    message: 'Tipo de conta deve ser corrente ou poupança'
   }).optional(),
   pixKey: z.string().optional(),
   pixKeyType: z.enum(['cpf', 'cnpj', 'email', 'phone', 'random'], {
-    errorMap: () => ({ message: 'Tipo de chave PIX inválido' })
+    message: 'Tipo de chave PIX inválido'
   }).optional(),
 }).optional()
 
@@ -233,18 +272,29 @@ export type StructuredBankInfo = z.infer<typeof structuredBankInfoSchema>
 // =====================================================================
 
 export const COMMON_SPECIALTIES = [
-  'Clínica Geral',
-  'Ortodontia',
-  'Endodontia',
-  'Periodontia',
-  'Implantodontia',
-  'Cirurgia Oral',
-  'Prótese Dentária',
-  'Odontopediatria',
-  'Radiologia Odontológica',
-  'Patologia Oral',
+  'Acupuntura',
+  'Cirurgia e Traumatologia Bucomaxilofacial',
   'Dentística',
-  'Harmonização Orofacial'
+  'Disfunção Temporomandibular e Dor Orofacial',
+  'Endodontia',
+  'Estomatologia',
+  'Harmonização Orofacial',
+  'Homeopatia',
+  'Implantodontia',
+  'Odontogeriatria',
+  'Odontologia do Esporte',
+  'Odontologia do Trabalho',
+  'Odontologia Legal',
+  'Odontologia para Pacientes com Necessidades Especiais',
+  'Odontopediatria',
+  'Ortodontia',
+  'Ortopedia Funcional dos Maxilares',
+  'Patologia Oral',
+  'Periodontia',
+  'Prótese Bucomaxilofacial',
+  'Prótese Dentária',
+  'Radiologia Odontológica e Imaginologia',
+  'Saúde Coletiva'
 ] as const
 
 export type CommonSpecialty = typeof COMMON_SPECIALTIES[number]

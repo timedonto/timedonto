@@ -15,7 +15,9 @@ import {
   BarChart3,
   Settings,
   UserCog,
-  X
+  X,
+  Briefcase,
+  UserCircle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { APP_NAME } from '@/config/constants'
@@ -34,23 +36,35 @@ const mainMenuItems: MenuItem[] = [
   { href: '/patients', label: 'Pacientes', icon: Users },
   { href: '/dentists', label: 'Dentistas', icon: Stethoscope },
   { href: '/treatment-plans', label: 'Orçamentos', icon: FileText },
-  { 
-    href: '/finance', 
-    label: 'Financeiro', 
+  {
+    href: '/finance',
+    label: 'Financeiro',
     icon: DollarSign,
     requiredRoles: [UserRole.OWNER, UserRole.ADMIN]
   },
-  { 
-    href: '/inventory', 
-    label: 'Estoque', 
+  {
+    href: '/inventory',
+    label: 'Estoque',
     icon: Package,
     requiredRoles: [UserRole.OWNER, UserRole.ADMIN, UserRole.RECEPTIONIST]
   },
-  { 
-    href: '/reports', 
-    label: 'Relatórios', 
+  {
+    href: '/reports',
+    label: 'Relatórios',
     icon: BarChart3,
     requiredRoles: [UserRole.OWNER, UserRole.ADMIN, UserRole.DENTIST]
+  },
+  {
+    href: '/services',
+    label: 'Serviços',
+    icon: Briefcase,
+    requiredRoles: [] // Todos têm acesso a visualizar
+  },
+  {
+    href: '/profile',
+    label: 'Meu Perfil',
+    icon: UserCircle,
+    requiredRoles: [UserRole.DENTIST]
   },
 ]
 
@@ -113,7 +127,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   // Função para renderizar item do menu
   const renderMenuItem = (item: MenuItem) => {
     const Icon = item.icon
-    const isActive = pathname === item.href || 
+    const isActive = pathname === item.href ||
       (item.href !== '/dashboard' && pathname.startsWith(item.href))
 
     return (
@@ -159,14 +173,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         )}>
           {APP_NAME}
         </h1>
-        <button 
+        <button
           onClick={onClose}
           className="md:hidden p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
         >
           <X className="h-6 w-6" />
         </button>
       </div>
-      
+
       <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
         {/* Menu principal */}
         <div className="space-y-1">

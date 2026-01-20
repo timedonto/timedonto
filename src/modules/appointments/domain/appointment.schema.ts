@@ -24,6 +24,10 @@ export const createAppointmentSchema = z.object({
   status: z.nativeEnum(AppointmentStatus, {
     errorMap: () => ({ message: 'Status deve ser SCHEDULED, CONFIRMED, CANCELED, RESCHEDULED, NO_SHOW ou DONE' })
   }).default(AppointmentStatus.SCHEDULED),
+  procedureId: z
+    .string()
+    .cuid('ID do procedimento deve ser um CUID válido')
+    .optional(),
   procedure: z
     .union([z.string(), z.null(), z.undefined()])
     .optional()
@@ -68,6 +72,10 @@ export const updateAppointmentSchema = z.object({
   status: z.nativeEnum(AppointmentStatus, {
     errorMap: () => ({ message: 'Status deve ser SCHEDULED, CONFIRMED, CANCELED, RESCHEDULED, NO_SHOW ou DONE' })
   }).optional(),
+  procedureId: z
+    .string()
+    .cuid('ID do procedimento deve ser um CUID válido')
+    .optional(),
   procedure: z
     .union([z.string(), z.null(), z.undefined()])
     .optional()

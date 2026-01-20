@@ -22,7 +22,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         // Busca o usuário no banco
         const user = await prisma.user.findFirst({
-          where: { 
+          where: {
             email: email,
             isActive: true,
           },
@@ -85,4 +85,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     maxAge: 24 * 60 * 60, // 24 horas
   },
   trustHost: true,
+  experimental: {
+    enableWebAuthn: false,
+  },
 })

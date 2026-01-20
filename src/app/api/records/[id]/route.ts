@@ -10,7 +10,7 @@ import { UserRole } from '@prisma/client';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -30,7 +30,7 @@ export async function GET(
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
     const clinicId = session.user.clinicId;
 
     // Get record by ID
@@ -57,7 +57,7 @@ export async function GET(
     });
   } catch (error) {
     console.error('Error getting record:', error);
-    
+
     // Handle "not found" errors
     if (error instanceof Error && error.message === 'Prontuário não encontrado') {
       return NextResponse.json(
