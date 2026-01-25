@@ -1,0 +1,5 @@
+export { MetricsCards } from './metrics-cards'
+export { MonthlyPerformanceChart } from './monthly-performance-chart'
+export { UpcomingAppointments } from './upcoming-appointments'
+export { RecentActivity } from './recent-activity'
+export { DashboardLoadingSkeleton } from './loading-skeleton'

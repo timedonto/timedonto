@@ -21,7 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { DentistOutput, COMMON_SPECIALTIES } from '@/modules/dentists/domain/dentist.schema'
+import { DentistOutput } from '@/modules/dentists/domain/dentist.schema'
+import { SpecialtyOutput } from '@/modules/specialties/domain/specialty.schema'
 
 // Schema para criar dentista
 const createDentistFormSchema = z.object({
@@ -29,7 +30,7 @@ const createDentistFormSchema = z.object({
   cro: z.string()
     .min(1, 'CRO é obrigatório')
     .regex(/^CRO-[A-Z]{2}\s+\d+$/, 'CRO deve seguir o formato: CRO-SP 12345'),
-  specialty: z.array(z.string()).optional(),
+  specialtyIds: z.array(z.string()).optional().default([]),
   commission: z.number()
     .min(0, 'Comissão deve ser no mínimo 0%')
     .max(100, 'Comissão deve ser no máximo 100%')
@@ -41,7 +42,7 @@ const updateDentistFormSchema = z.object({
   cro: z.string()
     .min(1, 'CRO é obrigatório')
     .regex(/^CRO-[A-Z]{2}\s+\d+$/, 'CRO deve seguir o formato: CRO-SP 12345'),
-  specialty: z.array(z.string()).optional(),
+  specialtyIds: z.array(z.string()).optional().default([]),
   commission: z.number()
     .min(0, 'Comissão deve ser no mínimo 0%')
     .max(100, 'Comissão deve ser no máximo 100%')
@@ -61,199 +62,117 @@ interface User {
 interface DentistFormModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  dentist?: DentistOutput
+  dentist?: DentistOutput | null
+  users: User[]
+  specialties: SpecialtyOutput[]
   onSuccess: () => void
 }
 
-export function DentistFormModal({ open, onOpenChange, dentist, onSuccess }: DentistFormModalProps) {
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [availableUsers, setAvailableUsers] = useState<User[]>([])
-  const [loadingUsers, setLoadingUsers] = useState(false)
-
+export function DentistFormModal({ open, onOpenChange, dentist, users, specialties, onSuccess }: DentistFormModalProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const isEditing = !!dentist
-  const title = isEditing
-    ? `Editar Dentista - ${dentist.user.name}`
-    : 'Novo Dentista'
 
-  // Configurar formulário baseado no modo (criar/editar)
-  const schema = isEditing ? updateDentistFormSchema : createDentistFormSchema
-
-  const form = useForm<CreateDentistFormData | UpdateDentistFormData>({
-    resolver: zodResolver(schema),
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors }
+  } = useForm<CreateDentistFormData | UpdateDentistFormData>({
+    resolver: zodResolver(isEditing ? updateDentistFormSchema : createDentistFormSchema),
     defaultValues: {
-      ...(isEditing ? {} : { userId: '' }),
+      userId: '',
       cro: '',
-      specialty: [],
-      commission: undefined,
-    },
+      specialtyIds: [],
+      commission: undefined
+    }
   })
 
-  const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = form
-
-  // Buscar usuários disponíveis para criar dentista
-  const fetchAvailableUsers = async () => {
-    if (isEditing) return // Não precisa buscar ao editar
-
-    try {
-      setLoadingUsers(true)
-
-      // Buscar usuários com role DENTIST
-      const response = await fetch('/api/users?role=DENTIST')
-      const data = await response.json()
-
-      if (response.ok && data.success) {
-        // Buscar dentistas existentes para filtrar
-        const dentistsResponse = await fetch('/api/dentists')
-        const dentistsData = await dentistsResponse.json()
-
-        let existingDentistUserIds: string[] = []
-        if (dentistsResponse.ok && dentistsData.success) {
-          existingDentistUserIds = dentistsData.data.map((d: DentistOutput) => d.userId)
-        }
-
-        // Filtrar usuários que ainda não são dentistas
-        const availableUsers = data.data.filter((user: User) =>
-          !existingDentistUserIds.includes(user.id)
-        )
-
-        setAvailableUsers(availableUsers)
+  // Reset form when modal opens/closes or dentist changes
+  useEffect(() => {
+    if (open) {
+      if (isEditing && dentist) {
+        reset({
+          cro: dentist.cro,
+          specialtyIds: dentist.specialties?.map(s => s.id) || [],
+          commission: dentist.commission || undefined
+        })
       } else {
-        console.error('Erro ao buscar usuários:', data.error)
+        reset({
+          userId: '',
+          cro: '',
+          specialtyIds: [],
+          commission: undefined
+        })
       }
-    } catch (err) {
-      console.error('Erro ao buscar usuários disponíveis:', err)
-    } finally {
-      setLoadingUsers(false)
     }
-  }
-
-  // Preencher formulário quando editando
-  useEffect(() => {
-    if (isEditing && dentist) {
-      setValue('cro', dentist.cro)
-      setValue('specialty', dentist.specialty ? dentist.specialty.split(', ') : [])
-      setValue('commission', dentist.commission || undefined)
-    } else {
-      reset({
-        ...(isEditing ? {} : { userId: '' }),
-        cro: '',
-        specialty: [],
-        commission: undefined,
-      })
-    }
-  }, [isEditing, dentist, setValue, reset])
-
-  // Buscar usuários quando modal abrir para criar
-  useEffect(() => {
-    if (open && !isEditing) {
-      fetchAvailableUsers()
-    }
-  }, [open, isEditing])
-
-  // Limpar formulário quando modal fechar
-  useEffect(() => {
-    if (!open) {
-      setError(null)
-      reset()
-    }
-  }, [open, reset])
+  }, [open, isEditing, dentist, reset])
 
   const onSubmit = async (data: CreateDentistFormData | UpdateDentistFormData) => {
+    setIsSubmitting(true)
+    
     try {
-      setLoading(true)
-      setError(null)
-
-      const url = isEditing ? `/api/dentists/${dentist!.id}` : '/api/dentists'
+      const url = isEditing ? `/api/dentists/${dentist?.id}` : '/api/dentists'
       const method = isEditing ? 'PATCH' : 'POST'
-
-      // Preparar dados para envio
-      const submitData: any = {
-        cro: data.cro,
-        specialty: data.specialty || null,
-        commission: data.commission || null,
-      }
-
-      // Adicionar userId apenas ao criar
-      if (!isEditing && 'userId' in data) {
-        submitData.userId = data.userId
-      }
-
+      
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(submitData),
+        body: JSON.stringify(data),
       })
 
-      const result = await response.json()
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Erro ao salvar dentista')
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Erro ao salvar dentista')
       }
 
-      // Sucesso
       onSuccess()
       onOpenChange(false)
       reset()
-
-    } catch (err) {
-      console.error('Erro ao salvar dentista:', err)
-      setError(err instanceof Error ? err.message : 'Erro ao salvar dentista')
+    } catch (error) {
+      console.error('Erro ao salvar dentista:', error)
+      alert(error instanceof Error ? error.message : 'Erro ao salvar dentista')
     } finally {
-      setLoading(false)
+      setIsSubmitting(false)
     }
   }
 
-  const selectedUserId = !isEditing ? watch('userId') : undefined
+  const selectedSpecialtyIds = watch('specialtyIds') || []
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle>
+            {isEditing ? 'Editar Dentista' : 'Novo Dentista'}
+          </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* Usuário (apenas ao criar) */}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* Usuário (apenas para criação) */}
           {!isEditing && (
             <div className="space-y-2">
               <Label htmlFor="userId">Usuário *</Label>
-              {loadingUsers ? (
-                <div className="flex items-center gap-2 p-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Carregando usuários...
-                </div>
-              ) : (
-                <Select
-                  value={selectedUserId || ''}
-                  onValueChange={(value) => setValue('userId', value)}
-                  disabled={loading}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um usuário" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableUsers.length === 0 ? (
-                      <div className="p-2 text-sm text-muted-foreground text-center">
-                        Nenhum usuário disponível
-                      </div>
-                    ) : (
-                      availableUsers.map((user) => (
-                        <SelectItem key={user.id} value={user.id}>
-                          <div>
-                            <div className="font-medium">{user.name}</div>
-                            <div className="text-sm text-muted-foreground">{user.email}</div>
-                          </div>
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              )}
-              {(errors as any).userId && (
-                <p className="text-sm text-destructive">{(errors as any).userId.message}</p>
+              <Select
+                value={watch('userId') || ''}
+                onValueChange={(value) => setValue('userId', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um usuário" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Array.isArray(users) ? users : []).map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.name} ({user.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.userId && (
+                <p className="text-sm text-destructive">{errors.userId.message}</p>
               )}
             </div>
           )}
@@ -263,43 +182,42 @@ export function DentistFormModal({ open, onOpenChange, dentist, onSuccess }: Den
             <Label htmlFor="cro">CRO *</Label>
             <Input
               id="cro"
+              placeholder="Ex: CRO-SP 12345"
               {...register('cro')}
-              placeholder="CRO-SP 12345"
-              disabled={loading}
             />
             {errors.cro && (
               <p className="text-sm text-destructive">{errors.cro.message}</p>
             )}
           </div>
 
-          {/* Especialidade */}
+          {/* Especialidades */}
           <div className="space-y-2">
             <Label>Especialidades</Label>
             <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
-              {COMMON_SPECIALTIES.map((spec) => {
-                const currentSpecs = (watch('specialty') as string[]) || []
-                const isChecked = currentSpecs.includes(spec)
+              {(Array.isArray(specialties) ? specialties : []).map((specialty) => {
+                const isChecked = selectedSpecialtyIds.includes(specialty.id)
 
                 return (
-                  <div key={spec} className="flex items-center space-x-2">
+                  <div key={specialty.id} className="flex items-center space-x-2">
                     <input
                       type="checkbox"
-                      id={`spec-${spec}`}
+                      id={`specialty-${specialty.id}`}
                       checked={isChecked}
                       onChange={(e) => {
+                        const currentIds = selectedSpecialtyIds
                         if (e.target.checked) {
-                          setValue('specialty', [...currentSpecs, spec])
+                          setValue('specialtyIds', [...currentIds, specialty.id])
                         } else {
-                          setValue('specialty', currentSpecs.filter((s) => s !== spec))
+                          setValue('specialtyIds', currentIds.filter((id) => id !== specialty.id))
                         }
                       }}
                       className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                     />
                     <label
-                      htmlFor={`spec-${spec}`}
+                      htmlFor={`specialty-${specialty.id}`}
                       className="text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                     >
-                      {spec}
+                      {specialty.name}
                     </label>
                   </div>
                 )
@@ -308,9 +226,6 @@ export function DentistFormModal({ open, onOpenChange, dentist, onSuccess }: Den
             <p className="text-xs text-muted-foreground">
               Selecione todas as especialidades do dentista.
             </p>
-            {errors.specialty && (
-              <p className="text-sm text-destructive">{(errors.specialty as any).message}</p>
-            )}
           </div>
 
           {/* Comissão */}
@@ -321,24 +236,16 @@ export function DentistFormModal({ open, onOpenChange, dentist, onSuccess }: Den
               type="number"
               min="0"
               max="100"
-              step="0.1"
+              step="0.01"
+              placeholder="Ex: 30"
               {...register('commission', {
                 setValueAs: (value) => value === '' ? undefined : parseFloat(value)
               })}
-              placeholder="Ex: 15.5"
-              disabled={loading}
             />
             {errors.commission && (
               <p className="text-sm text-destructive">{errors.commission.message}</p>
             )}
           </div>
-
-          {/* Erro */}
-          {error && (
-            <div className="rounded-md bg-destructive/10 p-3">
-              <p className="text-sm text-destructive">{error}</p>
-            </div>
-          )}
 
           {/* Botões */}
           <div className="flex justify-end space-x-2 pt-4">
@@ -346,13 +253,13 @@ export function DentistFormModal({ open, onOpenChange, dentist, onSuccess }: Den
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              disabled={loading}
+              disabled={isSubmitting}
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading || (!isEditing && loadingUsers)}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEditing ? 'Salvar Alterações' : 'Criar Dentista'}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isEditing ? 'Salvar' : 'Criar'}
             </Button>
           </div>
         </form>

@@ -1,5 +1,6 @@
 // Use cases
 export * from './list-users'
+export * from './list-eligible-users'
 export * from './create-user'
 export * from './update-user'
 

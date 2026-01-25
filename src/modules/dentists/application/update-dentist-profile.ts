@@ -96,6 +96,8 @@ export async function updateDentistProfile(params: UpdateDentistProfileParams): 
             specialty: validatedData.specialty,
             workingHours: validatedData.workingHours,
             bankInfo: validatedData.bankInfo,
+            contactInfo: validatedData.contactInfo,
+            personalInfo: validatedData.personalInfo,
             commission: validatedData.commission
         })
 

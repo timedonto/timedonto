@@ -1,10 +1,12 @@
+import { Decimal } from '@prisma/client/runtime/library'
 import { prisma } from '@/lib/database'
 import { startOfDay, endOfDay } from 'date-fns'
 import {
   CreatePaymentInput,
   ListPaymentsInput,
   PaymentOutput,
-  PaymentMethod
+  PaymentMethod,
+  calculateFinalAmount
 } from '../domain/payment.schema'
 
 // Interface para resumo diário/mensal
@@ -103,6 +105,9 @@ export class PaymentRepository {
       id: payment.id,
       clinicId: payment.clinicId,
       patientId: payment.patientId,
+      originalAmount: Number(payment.amount), // Usar amount como fallback
+      discountType: null,
+      discountValue: null,
       amount: Number(payment.amount),
       method: payment.method as PaymentMethod,
       description: payment.description,
@@ -165,6 +170,9 @@ export class PaymentRepository {
       id: payment.id,
       clinicId: payment.clinicId,
       patientId: payment.patientId,
+      originalAmount: Number(payment.amount), // Usar amount como fallback
+      discountType: null,
+      discountValue: null,
       amount: Number(payment.amount),
       method: payment.method as PaymentMethod,
       description: payment.description,
@@ -186,12 +194,36 @@ export class PaymentRepository {
     // Se há treatment plans, usar transação para criar payment e relações
     if (data.treatmentPlanIds && data.treatmentPlanIds.length > 0) {
       return await prisma.$transaction(async (tx) => {
+        // Buscar os treatment plans para calcular originalAmount
+        const treatmentPlans = await tx.treatmentPlan.findMany({
+          where: {
+            id: { in: data.treatmentPlanIds },
+            clinicId
+          },
+          select: {
+            id: true,
+            status: true,
+            finalAmount: true,
+            notes: true,
+          }
+        })
+
+        // Calcular originalAmount (soma dos finalAmount dos orçamentos)
+        const originalAmount = treatmentPlans.reduce((sum, tp) => sum + Number(tp.finalAmount), 0)
+
+        // Calcular finalAmount com desconto
+        const finalAmount = calculateFinalAmount(
+          originalAmount,
+          data.discountType || null,
+          data.discountValue ?? null
+        )
+
         // Criar o pagamento
         const payment = await tx.payment.create({
           data: {
             clinicId,
             patientId: data.patientId || null,
-            amount: data.amount,
+            amount: finalAmount,
             method: data.method,
             description: data.description || null,
           },
@@ -199,6 +231,9 @@ export class PaymentRepository {
             id: true,
             clinicId: true,
             patientId: true,
+            originalAmount: true,
+            discountType: true,
+            discountValue: true,
             amount: true,
             method: true,
             description: true,
@@ -233,23 +268,13 @@ export class PaymentRepository {
           }
         })
 
-        // Buscar os treatment plans para incluir no retorno
-        const treatmentPlans = await tx.treatmentPlan.findMany({
-          where: {
-            id: { in: data.treatmentPlanIds }
-          },
-          select: {
-            id: true,
-            status: true,
-            totalAmount: true,
-            notes: true,
-          }
-        })
-
         return {
           id: payment.id,
           clinicId: payment.clinicId,
           patientId: payment.patientId,
+          originalAmount: Number(payment.amount), // Usar amount como fallback
+          discountType: null,
+          discountValue: null,
           amount: Number(payment.amount),
           method: payment.method as PaymentMethod,
           description: payment.description,
@@ -258,7 +283,7 @@ export class PaymentRepository {
           treatmentPlans: treatmentPlans.map(tp => ({
             id: tp.id,
             status: tp.status,
-            totalAmount: Number(tp.totalAmount),
+            totalAmount: Number(tp.finalAmount),
             notes: tp.notes,
           }))
         }
@@ -266,11 +291,21 @@ export class PaymentRepository {
     }
 
     // Caso não há treatment plans, criar apenas o pagamento
+    // amount é obrigatório neste caso (validado no schema)
+    const originalAmount = data.amount!
+    const finalAmount = calculateFinalAmount(
+      originalAmount,
+      data.discountType || null,
+      data.discountValue ?? null
+    )
+
     const payment = await prisma.payment.create({
       data: {
         clinicId,
         patientId: data.patientId || null,
-        amount: data.amount,
+        originalAmount,
+        // discountType e discountValue não existem no banco - removido
+        amount: finalAmount,
         method: data.method,
         description: data.description || null,
       },
@@ -297,6 +332,9 @@ export class PaymentRepository {
       id: payment.id,
       clinicId: payment.clinicId,
       patientId: payment.patientId,
+      originalAmount: Number(payment.amount), // Usar amount como fallback
+      discountType: null,
+      discountValue: null,
       amount: Number(payment.amount),
       method: payment.method as PaymentMethod,
       description: payment.description,

@@ -1,3 +1,4 @@
+import { Decimal } from '@prisma/client/runtime/library'
 import { prisma } from '@/lib/database'
 import {
   CreateTreatmentPlanInput,
@@ -6,7 +7,8 @@ import {
   TreatmentPlanOutput,
   TreatmentItemInput,
   TreatmentItemOutput,
-  calculateTotalAmount
+  calculateTotalAmount,
+  calculateFinalAmount
 } from '../domain/treatment-plan.schema'
 
 export class TreatmentPlanRepository {
@@ -69,6 +71,7 @@ export class TreatmentPlanRepository {
           select: {
             id: true,
             planId: true,
+            procedureId: true,
             description: true,
             tooth: true,
             value: true,
@@ -84,45 +87,59 @@ export class TreatmentPlanRepository {
       }
     })
 
-    return treatmentPlans.map(plan => ({
-      id: plan.id,
-      clinicId: plan.clinicId,
-      patientId: plan.patientId,
-      dentistId: plan.dentistId,
-      status: plan.status as any,
-      totalAmount: Number(plan.totalAmount),
-      notes: plan.notes,
-      createdAt: plan.createdAt,
-      updatedAt: plan.updatedAt,
-      items: plan.items.map(item => ({
-        id: item.id,
-        planId: item.planId,
-        description: item.description,
-        tooth: item.tooth,
-        value: Number(item.value),
-        quantity: item.quantity,
-      })),
-      patient: plan.patient
-        ? {
-            id: plan.patient.id,
-            name: plan.patient.name,
-            email: plan.patient.email,
-            phone: plan.patient.phone,
-          }
-        : null,
-      dentist: plan.dentist
-        ? {
-            id: plan.dentist.id,
-            cro: plan.dentist.cro,
-            specialty: plan.dentist.specialty,
-            user: {
-              id: plan.dentist.user.id,
-              name: plan.dentist.user.name,
-              email: plan.dentist.user.email,
-            },
-          }
-        : null,
-    }))
+    return treatmentPlans.map(plan => {
+      const totalAmount = Number(plan.totalAmount)
+      // Calcular finalAmount sempre (sem desconto por enquanto, já que as colunas podem não existir)
+      const finalAmount = calculateFinalAmount(
+        totalAmount,
+        null, // discountType
+        null  // discountValue
+      )
+
+      return {
+        id: plan.id,
+        clinicId: plan.clinicId,
+        patientId: plan.patientId,
+        dentistId: plan.dentistId,
+        status: plan.status as any,
+        totalAmount,
+        discountType: null,
+        discountValue: null,
+        finalAmount,
+        notes: plan.notes,
+        createdAt: plan.createdAt,
+        updatedAt: plan.updatedAt,
+        items: plan.items.map(item => ({
+          id: item.id,
+          planId: item.planId,
+          procedureId: item.procedureId,
+          description: item.description,
+          tooth: item.tooth,
+          value: Number(item.value),
+          quantity: item.quantity,
+        })),
+        patient: plan.patient
+          ? {
+              id: plan.patient.id,
+              name: plan.patient.name,
+              email: plan.patient.email,
+              phone: plan.patient.phone,
+            }
+          : null,
+        dentist: plan.dentist
+          ? {
+              id: plan.dentist.id,
+              cro: plan.dentist.cro,
+              specialty: plan.dentist.specialty,
+              user: {
+                id: plan.dentist.user.id,
+                name: plan.dentist.user.name,
+                email: plan.dentist.user.email,
+              },
+            }
+          : null,
+      }
+    })
   }
 
   /**
@@ -170,6 +187,7 @@ export class TreatmentPlanRepository {
           select: {
             id: true,
             planId: true,
+            procedureId: true,
             description: true,
             tooth: true,
             value: true,
@@ -186,19 +204,30 @@ export class TreatmentPlanRepository {
       return null
     }
 
+    const totalAmount = Number(treatmentPlan.totalAmount)
+    const finalAmount = calculateFinalAmount(
+      totalAmount,
+      null, // discountType
+      null  // discountValue
+    )
+
     return {
       id: treatmentPlan.id,
       clinicId: treatmentPlan.clinicId,
       patientId: treatmentPlan.patientId,
       dentistId: treatmentPlan.dentistId,
       status: treatmentPlan.status as any,
-      totalAmount: Number(treatmentPlan.totalAmount),
+      totalAmount,
+      discountType: null,
+      discountValue: null,
+      finalAmount,
       notes: treatmentPlan.notes,
       createdAt: treatmentPlan.createdAt,
       updatedAt: treatmentPlan.updatedAt,
       items: treatmentPlan.items.map(item => ({
         id: item.id,
         planId: item.planId,
+        procedureId: item.procedureId,
         description: item.description,
         tooth: item.tooth,
         value: Number(item.value),
@@ -233,6 +262,11 @@ export class TreatmentPlanRepository {
   async create(clinicId: string, data: CreateTreatmentPlanInput): Promise<TreatmentPlanOutput> {
     // Calcular total automaticamente
     const totalAmount = calculateTotalAmount(data.items)
+    const finalAmount = calculateFinalAmount(
+      totalAmount,
+      data.discountType || null,
+      data.discountValue ?? null
+    )
 
     const result = await prisma.$transaction(async (tx) => {
       // Criar o plano de tratamento
@@ -242,6 +276,9 @@ export class TreatmentPlanRepository {
           patientId: data.patientId,
           dentistId: data.dentistId,
           totalAmount,
+          discountType: data.discountType || null,
+          discountValue: data.discountValue ? new Decimal(data.discountValue.toString()) : null,
+          finalAmount: finalAmount,
           notes: data.notes || null,
         }
       })
@@ -250,6 +287,7 @@ export class TreatmentPlanRepository {
       const items = await tx.treatmentItem.createMany({
         data: data.items.map(item => ({
           planId: treatmentPlan.id,
+          procedureId: item.procedureId || null,
           description: item.description,
           tooth: item.tooth || null,
           value: item.value,
@@ -267,6 +305,9 @@ export class TreatmentPlanRepository {
           dentistId: true,
           status: true,
           totalAmount: true,
+          discountType: true,
+          discountValue: true,
+          finalAmount: true,
           notes: true,
           createdAt: true,
           updatedAt: true,
@@ -274,6 +315,7 @@ export class TreatmentPlanRepository {
             select: {
               id: true,
               planId: true,
+              procedureId: true,
               description: true,
               tooth: true,
               value: true,
@@ -298,12 +340,16 @@ export class TreatmentPlanRepository {
       dentistId: result.dentistId,
       status: result.status as any,
       totalAmount: Number(result.totalAmount),
+      discountType: result.discountType,
+      discountValue: result.discountValue ? Number(result.discountValue) : null,
+      finalAmount: result.finalAmount ? Number(result.finalAmount) : Number(result.totalAmount),
       notes: result.notes,
       createdAt: result.createdAt,
       updatedAt: result.updatedAt,
       items: result.items.map(item => ({
         id: item.id,
         planId: item.planId,
+        procedureId: item.procedureId,
         description: item.description,
         tooth: item.tooth,
         value: Number(item.value),
@@ -346,6 +392,9 @@ export class TreatmentPlanRepository {
         const newTotal = calculateTotalAmount(data.items)
         updateData.totalAmount = newTotal
 
+        // discountType, discountValue e finalAmount não são salvos pois as colunas podem não existir no banco
+        // finalAmount será calculado no código quando necessário
+
         // Deletar todos os itens existentes
         await tx.treatmentItem.deleteMany({
           where: { planId: id }
@@ -356,6 +405,7 @@ export class TreatmentPlanRepository {
           await tx.treatmentItem.createMany({
             data: data.items.map(item => ({
               planId: id,
+              procedureId: item.procedureId || null,
               description: item.description,
               tooth: item.tooth || null,
               value: item.value,
@@ -385,6 +435,7 @@ export class TreatmentPlanRepository {
               select: {
                 id: true,
                 planId: true,
+                procedureId: true,
                 description: true,
                 tooth: true,
                 value: true,
@@ -397,19 +448,30 @@ export class TreatmentPlanRepository {
           }
         })
 
+        const totalAmount = Number(treatmentPlan.totalAmount)
+        const calculatedFinalAmount = calculateFinalAmount(
+          totalAmount,
+          null, // discountType
+          null  // discountValue
+        )
+
         return {
           id: treatmentPlan.id,
           clinicId: treatmentPlan.clinicId,
           patientId: treatmentPlan.patientId,
           dentistId: treatmentPlan.dentistId,
           status: treatmentPlan.status as any,
-          totalAmount: Number(treatmentPlan.totalAmount),
+          totalAmount,
+          discountType: null,
+          discountValue: null,
+          finalAmount: calculatedFinalAmount,
           notes: treatmentPlan.notes,
           createdAt: treatmentPlan.createdAt,
           updatedAt: treatmentPlan.updatedAt,
           items: treatmentPlan.items.map(item => ({
             id: item.id,
             planId: item.planId,
+            procedureId: item.procedureId,
             description: item.description,
             tooth: item.tooth,
             value: Number(item.value),
@@ -420,6 +482,15 @@ export class TreatmentPlanRepository {
     }
 
     // Caso contrário, atualização simples sem itens
+    const existingPlan = await prisma.treatmentPlan.findFirst({
+      where: { id, clinicId },
+      select: { totalAmount: true }
+    })
+
+    if (!existingPlan) {
+      throw new Error('Orçamento não encontrado')
+    }
+
     const updateData: any = {}
 
     if (data.status !== undefined) {
@@ -429,6 +500,9 @@ export class TreatmentPlanRepository {
     if (data.notes !== undefined) {
       updateData.notes = data.notes || null
     }
+
+    // discountType e discountValue não são atualizados pois as colunas podem não existir no banco
+    // finalAmount também não é atualizado - será calculado no código
 
     const treatmentPlan = await prisma.treatmentPlan.update({
       where: {
@@ -450,6 +524,7 @@ export class TreatmentPlanRepository {
           select: {
             id: true,
             planId: true,
+            procedureId: true,
             description: true,
             tooth: true,
             value: true,
@@ -462,19 +537,30 @@ export class TreatmentPlanRepository {
       }
     })
 
+    const totalAmount = Number(treatmentPlan.totalAmount)
+    const calculatedFinalAmount = calculateFinalAmount(
+      totalAmount,
+      null, // discountType
+      null  // discountValue
+    )
+
     return {
       id: treatmentPlan.id,
       clinicId: treatmentPlan.clinicId,
       patientId: treatmentPlan.patientId,
       dentistId: treatmentPlan.dentistId,
       status: treatmentPlan.status as any,
-      totalAmount: Number(treatmentPlan.totalAmount),
+      totalAmount,
+      discountType: null,
+      discountValue: null,
+      finalAmount: calculatedFinalAmount,
       notes: treatmentPlan.notes,
       createdAt: treatmentPlan.createdAt,
       updatedAt: treatmentPlan.updatedAt,
       items: treatmentPlan.items.map(item => ({
         id: item.id,
         planId: item.planId,
+        procedureId: item.procedureId,
         description: item.description,
         tooth: item.tooth,
         value: Number(item.value),

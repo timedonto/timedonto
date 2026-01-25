@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Calendar, Users, DollarSign, Package, Clock, UserCheck, UserX, Crown, Shield, Stethoscope, Headphones, Loader2 } from 'lucide-react'
+import { Calendar, Users, DollarSign, Package, Clock, UserCheck, UserX, Crown, Shield, Stethoscope, Headphones, Loader2, AlertTriangle, History, ArrowDown, ArrowUp } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -142,6 +142,35 @@ interface FinanceReportData {
   }>
 }
 
+interface InventoryReportData {
+  totalItems: number
+  activeItems: number
+  inactiveItems: number
+  lowStockItems: number
+  outOfStockItems: number
+  totalMovements: number
+  movementsByType: {
+    IN: number
+    OUT: number
+  }
+  recentMovements: Array<{
+    id: string
+    itemName: string
+    type: 'IN' | 'OUT'
+    quantity: number
+    unit: string
+    createdAt: string
+    createdByName: string
+  }>
+  itemsLowStock: Array<{
+    id: string
+    name: string
+    currentQuantity: number
+    minQuantity: number | null
+    unit: string
+  }>
+}
+
 export default function ReportsPage() {
   const { data: session } = useSession()
   const [activeTab, setActiveTab] = useState('appointments')
@@ -167,6 +196,10 @@ export default function ReportsPage() {
     fromDate: '',
     toDate: ''
   })
+
+  // Estados para relatório de estoque
+  const [inventoryReportData, setInventoryReportData] = useState<InventoryReportData | null>(null)
+  const [inventoryReportLoading, setInventoryReportLoading] = useState(false)
 
   // Buscar lista de dentistas para o filtro
   const fetchDentists = async () => {
@@ -265,6 +298,24 @@ export default function ReportsPage() {
     }
   }
 
+  // Buscar dados do relatório de estoque
+  const fetchInventoryReport = async () => {
+    try {
+      setInventoryReportLoading(true)
+      
+      const response = await fetch('/api/reports/inventory')
+      const data = await response.json()
+      
+      if (data.success) {
+        setInventoryReportData(data.data)
+      }
+    } catch (error) {
+      console.error('Erro ao buscar relatório de estoque:', error)
+    } finally {
+      setInventoryReportLoading(false)
+    }
+  }
+
   // Carregar dados iniciais
   useEffect(() => {
     fetchDentists()
@@ -291,6 +342,13 @@ export default function ReportsPage() {
       fetchFinanceReport()
     }
   }, [activeTab, financeReportData])
+
+  // Carregar dados de estoque quando a aba for selecionada
+  useEffect(() => {
+    if (activeTab === 'inventory' && !inventoryReportData) {
+      fetchInventoryReport()
+    }
+  }, [activeTab, inventoryReportData])
 
   // Handler para filtros de agenda
   const handleAppointmentFilter = (filters: FilterValues) => {
@@ -1113,13 +1171,223 @@ export default function ReportsPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="inventory" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Relatório de Estoque</CardTitle>
-              <CardDescription>Em desenvolvimento</CardDescription>
-            </CardHeader>
-          </Card>
+        <TabsContent value="inventory" className="space-y-6">
+          {inventoryReportLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Carregando relatório de estoque...
+              </div>
+            </div>
+          ) : inventoryReportData ? (
+            <>
+              {/* Cards de resumo de itens */}
+              <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-5">
+                <ReportCard
+                  title="Total de Itens"
+                  value={inventoryReportData.totalItems}
+                  icon={Package}
+                />
+
+                <ReportCard
+                  title="Itens Ativos"
+                  value={inventoryReportData.activeItems}
+                  icon={UserCheck}
+                  description={`${inventoryReportData.totalItems > 0 ? ((inventoryReportData.activeItems / inventoryReportData.totalItems) * 100).toFixed(1) : 0}% do total`}
+                />
+
+                <ReportCard
+                  title="Itens Inativos"
+                  value={inventoryReportData.inactiveItems}
+                  icon={UserX}
+                  description={`${inventoryReportData.totalItems > 0 ? ((inventoryReportData.inactiveItems / inventoryReportData.totalItems) * 100).toFixed(1) : 0}% do total`}
+                />
+
+                <div className={inventoryReportData.lowStockItems > 0 ? "rounded-lg border border-amber-500 bg-amber-50/50" : ""}>
+                  <ReportCard
+                    title="Estoque Baixo"
+                    value={inventoryReportData.lowStockItems}
+                    icon={AlertTriangle}
+                    description="Abaixo do mínimo"
+                    className={inventoryReportData.lowStockItems > 0 ? "border-0 bg-transparent" : ""}
+                  />
+                </div>
+
+                <div className={inventoryReportData.outOfStockItems > 0 ? "rounded-lg border border-red-500 bg-red-50/50" : ""}>
+                  <ReportCard
+                    title="Sem Estoque"
+                    value={inventoryReportData.outOfStockItems}
+                    icon={AlertTriangle}
+                    description="Quantidade zerada"
+                    className={inventoryReportData.outOfStockItems > 0 ? "border-0 bg-transparent" : ""}
+                  />
+                </div>
+              </div>
+
+              {/* Cards de movimentações */}
+              <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
+                <ReportCard
+                  title="Total de Movimentações"
+                  value={inventoryReportData.totalMovements}
+                  icon={History}
+                />
+
+                <ReportCard
+                  title="Entradas"
+                  value={inventoryReportData.movementsByType.IN}
+                  icon={ArrowDown}
+                  description="Movimentações de entrada"
+                />
+
+                <ReportCard
+                  title="Saídas"
+                  value={inventoryReportData.movementsByType.OUT}
+                  icon={ArrowUp}
+                  description="Movimentações de saída"
+                />
+              </div>
+
+              {/* Seção Itens em Alerta */}
+              {inventoryReportData.itemsLowStock.length > 0 && (
+                <Card>
+                  <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <CardTitle className="text-base sm:text-lg">Itens em Alerta</CardTitle>
+                    <ExportButton
+                      data={inventoryReportData.itemsLowStock}
+                      columns={[
+                        { key: 'name', header: 'Nome', type: 'string' },
+                        { key: 'unit', header: 'Unidade', type: 'string' },
+                        { key: 'currentQuantity', header: 'Qtd Atual', type: 'number' },
+                        { key: 'minQuantity', header: 'Qtd Mínima', type: 'number' }
+                      ]}
+                      filename="itens_em_alerta"
+                      className="w-full sm:w-auto"
+                    />
+                  </CardHeader>
+                  <CardContent className="p-0 sm:p-6">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-xs sm:text-sm">Nome</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Unidade</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Qtd Atual</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Qtd Mínima</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {inventoryReportData.itemsLowStock.map((item) => {
+                            const isOutOfStock = item.currentQuantity === 0
+                            const isLowStock = item.currentQuantity > 0 && item.minQuantity !== null && item.currentQuantity <= item.minQuantity
+                            
+                            return (
+                              <TableRow 
+                                key={item.id}
+                                className={isOutOfStock ? "bg-red-50" : isLowStock ? "bg-amber-50" : ""}
+                              >
+                                <TableCell className="font-medium text-xs sm:text-sm">{item.name}</TableCell>
+                                <TableCell className="text-muted-foreground text-xs sm:text-sm">{item.unit}</TableCell>
+                                <TableCell className="text-xs sm:text-sm">
+                                  <Badge 
+                                    variant={isOutOfStock ? "destructive" : isLowStock ? "warning" : "default"}
+                                    className="text-xs"
+                                  >
+                                    {item.currentQuantity}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-muted-foreground text-xs sm:text-sm">
+                                  {item.minQuantity !== null ? item.minQuantity : '-'}
+                                </TableCell>
+                              </TableRow>
+                            )
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Seção Movimentações Recentes */}
+              {inventoryReportData.recentMovements.length > 0 && (
+                <Card>
+                  <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <CardTitle className="text-base sm:text-lg">Movimentações Recentes</CardTitle>
+                    <ExportButton
+                      data={inventoryReportData.recentMovements}
+                      columns={[
+                        { key: 'createdAt', header: 'Data', type: 'date' },
+                        { key: 'itemName', header: 'Item', type: 'string' },
+                        { key: 'type', header: 'Tipo', type: 'string' },
+                        { key: 'quantity', header: 'Quantidade', type: 'number' },
+                        { key: 'createdByName', header: 'Responsável', type: 'string' }
+                      ]}
+                      filename="movimentacoes_recentes"
+                      className="w-full sm:w-auto"
+                    />
+                  </CardHeader>
+                  <CardContent className="p-0 sm:p-6">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-xs sm:text-sm">Data</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Item</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Tipo</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Quantidade</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Responsável</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {inventoryReportData.recentMovements.map((movement) => (
+                            <TableRow key={movement.id}>
+                              <TableCell className="font-medium text-xs sm:text-sm">
+                                {formatDate(movement.createdAt)}
+                              </TableCell>
+                              <TableCell className="text-xs sm:text-sm">{movement.itemName}</TableCell>
+                              <TableCell>
+                                <Badge 
+                                  variant={movement.type === 'IN' ? 'default' : 'destructive'}
+                                  className="text-xs"
+                                >
+                                  {movement.type === 'IN' ? 'Entrada' : 'Saída'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-xs sm:text-sm">
+                                {movement.quantity} {movement.unit}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground text-xs sm:text-sm">
+                                {movement.createdByName}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Mensagem quando não há dados */}
+              {inventoryReportData.itemsLowStock.length === 0 && inventoryReportData.recentMovements.length === 0 && (
+                <Card>
+                  <CardContent className="py-8 text-center text-muted-foreground">
+                    <p>Nenhum dado disponível para exibição.</p>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+              <div className="text-center">
+                <h3 className="text-lg font-semibold">Erro ao carregar relatório</h3>
+                <p className="text-muted-foreground">Não foi possível carregar os dados de estoque</p>
+              </div>
+              <Button onClick={fetchInventoryReport} variant="outline">
+                Tentar novamente
+              </Button>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

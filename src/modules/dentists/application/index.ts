@@ -3,6 +3,8 @@ export * from './list-dentists'
 export * from './create-dentist'
 export * from './update-dentist'
 export * from './update-dentist-profile'
+export * from './associate-dentist-specialties'
+export * from './remove-dentist-specialty'
 
 // Re-export domain types
 export type {
@@ -11,6 +13,7 @@ export type {
   UpdateDentistProfileInput,
   ListDentistsInput,
   DentistOutput,
+  DentistSpecialtyOutput,
   GetDentistInput,
   DeleteDentistInput,
   UpdateDentistWithIdInput,
@@ -19,7 +22,9 @@ export type {
   GetDentistByUserInput,
   StructuredWorkingHours,
   StructuredBankInfo,
-  CommonSpecialty
+  CommonSpecialty,
+  AssociateDentistSpecialtiesInput,
+  RemoveDentistSpecialtyInput
 } from '../domain/dentist.schema'
 
 // Re-export schemas for validation
@@ -39,5 +44,7 @@ export {
   getDentistByUserSchema,
   structuredWorkingHoursSchema,
   structuredBankInfoSchema,
-  COMMON_SPECIALTIES
+  COMMON_SPECIALTIES,
+  associateDentistSpecialtiesSchema,
+  removeDentistSpecialtySchema
 } from '../domain/dentist.schema'

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
     Breadcrumb,
@@ -16,6 +17,8 @@ import { DentistServicesTab } from './components/dentist-services-tab'
 import { DentistScheduleTab } from './components/dentist-schedule-tab'
 import { DentistFinancialTab } from './components/dentist-financial-tab'
 import { DentistRecordsTab } from './components/dentist-records-tab'
+import { DentistBudgetsTab } from './components/dentist-budgets-tab'
+import { DentistEditModal } from './components/dentist-edit-modal'
 import { updateDentistProceduresAction } from '../actions'
 import {
     User,
@@ -30,20 +33,29 @@ interface DentistDetailsClientProps {
     dentist: any
     availableProcedures: any[]
     currentUserRole: string
+    currentUserId: string
 }
 
 export function DentistDetailsClient({
     dentist,
     availableProcedures,
     currentUserRole,
+    currentUserId,
 }: DentistDetailsClientProps) {
     const [activeTab, setActiveTab] = useState('info')
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+    const router = useRouter()
 
     const canManageProcedures = currentUserRole === 'OWNER' || currentUserRole === 'ADMIN'
 
     const handleSaveProcedures = async (procedureIds: string[]) => {
         const result = await updateDentistProceduresAction(dentist.id, procedureIds)
         return result
+    }
+
+    const handleEditSuccess = () => {
+        // Recarregar a página para atualizar os dados
+        router.refresh()
     }
 
     return (
@@ -67,7 +79,21 @@ export function DentistDetailsClient({
             </Breadcrumb>
 
             {/* Profile Header */}
-            <DentistProfileHeader dentist={dentist} />
+            <DentistProfileHeader
+                dentist={dentist}
+                currentUserRole={currentUserRole}
+                currentUserId={currentUserId}
+                onEditClick={() => setIsEditModalOpen(true)}
+            />
+
+            {/* Edit Modal */}
+            <DentistEditModal
+                open={isEditModalOpen}
+                onOpenChange={setIsEditModalOpen}
+                dentist={dentist}
+                currentUserRole={currentUserRole}
+                onSuccess={handleEditSuccess}
+            />
 
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -125,31 +151,19 @@ export function DentistDetailsClient({
                 </TabsContent>
 
                 <TabsContent value="schedule" className="mt-0">
-                    <DentistScheduleTab />
+                    <DentistScheduleTab dentistId={dentist.id} />
                 </TabsContent>
 
                 <TabsContent value="records" className="mt-0">
-                    <DentistRecordsTab />
+                    <DentistRecordsTab dentistId={dentist.id} />
                 </TabsContent>
 
                 <TabsContent value="budgets" className="mt-0">
-                    <div className="bg-white dark:bg-background-dark border border-gray-200 dark:border-gray-800 rounded-lg p-12 text-center shadow-sm">
-                        <svg
-                            className="w-16 h-16 text-muted-foreground opacity-20 mx-auto mb-4"
-                            fill="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
-                        </svg>
-                        <h3 className="font-semibold text-lg mb-2">Em Breve</h3>
-                        <p className="text-muted-foreground max-w-md mx-auto">
-                            Visualização e gestão de orçamentos criados por este profissional.
-                        </p>
-                    </div>
+                    <DentistBudgetsTab dentistId={dentist.id} />
                 </TabsContent>
 
                 <TabsContent value="financial" className="mt-0">
-                    <DentistFinancialTab />
+                    <DentistFinancialTab dentistId={dentist.id} />
                 </TabsContent>
 
                 <TabsContent value="services" className="mt-0">

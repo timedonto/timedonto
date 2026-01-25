@@ -78,12 +78,13 @@ export default function AppointmentsPage() {
   const isMounted = React.useRef(false)
 
   React.useEffect(() => {
+    isMounted.current = true
     fetchDentists()
     fetchAppointments()
-    isMounted.current = true
   }, [])
 
   React.useEffect(() => {
+    // Only fetch when date changes after initial mount
     if (isMounted.current) {
       fetchAppointments()
     }

@@ -25,6 +25,12 @@ export function DentistsClient({
     canEdit,
     loading = false,
 }: DentistsClientProps) {
+    const [mounted, setMounted] = React.useState(false)
+
+    React.useEffect(() => {
+        setMounted(true)
+    }, [])
+
     const columns = React.useMemo(
         () => getColumns({ onEdit, onDelete, canEdit }),
         [onEdit, onDelete, canEdit]
@@ -39,6 +45,10 @@ export function DentistsClient({
         { label: "Ativo", value: "active", icon: CheckCircle2 },
         { label: "Inativo", value: "inactive", icon: XCircle },
     ]
+
+    if (!mounted) {
+        return null
+    }
 
     return (
         <div className="space-y-6">

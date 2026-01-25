@@ -56,19 +56,18 @@ export async function updateProcedure(params: UpdateProcedureParams): Promise<Up
             }
         }
 
-        // 4. Se alterar specialtyId, validar que pertence à clínica
+        // 4. Se alterar specialtyId, validar que existe (global)
         if (data.specialtyId && data.specialtyId !== existingProcedure.specialtyId) {
-            const specialty = await prisma.specialty.findFirst({
+            const specialty = await prisma.specialty.findUnique({
                 where: {
-                    id: data.specialtyId,
-                    clinicId
+                    id: data.specialtyId
                 }
             })
 
             if (!specialty) {
                 return {
                     success: false,
-                    error: 'Especialidade não encontrada ou não pertence a esta clínica'
+                    error: 'Especialidade não encontrada'
                 }
             }
         }

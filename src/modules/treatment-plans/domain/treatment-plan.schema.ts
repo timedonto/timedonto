@@ -5,12 +5,18 @@ import { z } from 'zod'
 // =====================================================================
 
 export const TreatmentPlanStatusEnum = z.enum(['OPEN', 'APPROVED', 'REJECTED'])
+export const DiscountTypeEnum = z.enum(['PERCENTAGE', 'FIXED'])
 
 // =====================================================================
 // VALIDATION SCHEMAS
 // =====================================================================
 
 export const treatmentItemSchema = z.object({
+  procedureId: z
+    .string()
+    .cuid('ID do procedimento deve ser um CUID válido')
+    .nullable()
+    .optional(),
   description: z
     .string()
     .min(3, 'Descrição deve ter pelo menos 3 caracteres')
@@ -46,8 +52,46 @@ export const createTreatmentPlanSchema = z.object({
   items: z
     .array(treatmentItemSchema)
     .min(1, 'Deve haver pelo menos um item no orçamento')
-    .max(50, 'Máximo de 50 itens por orçamento')
-})
+    .max(50, 'Máximo de 50 itens por orçamento'),
+  discountType: DiscountTypeEnum.nullable().optional(),
+  discountValue: z
+    .number()
+    .nonnegative('Valor do desconto não pode ser negativo')
+    .max(999999.99, 'Valor do desconto deve ser no máximo R$ 999.999,99')
+    .nullable()
+    .optional()
+}).refine(
+  (data) => {
+    // Se discountType está definido, discountValue deve estar definido
+    if (data.discountType && data.discountValue === undefined) {
+      return false
+    }
+    // Se discountValue está definido, discountType deve estar definido
+    if (data.discountValue !== undefined && data.discountValue !== null && !data.discountType) {
+      return false
+    }
+    return true
+  },
+  {
+    message: 'Tipo e valor de desconto devem ser informados juntos',
+    path: ['discountType']
+  }
+).refine(
+  (data) => {
+    if (!data.discountType || data.discountValue === undefined || data.discountValue === null) {
+      return true
+    }
+    // Se for percentual, valor deve estar entre 0 e 100
+    if (data.discountType === 'PERCENTAGE' && (data.discountValue < 0 || data.discountValue > 100)) {
+      return false
+    }
+    return true
+  },
+  {
+    message: 'Desconto percentual deve estar entre 0% e 100%',
+    path: ['discountValue']
+  }
+)
 
 export const updateTreatmentPlanSchema = z.object({
   status: TreatmentPlanStatusEnum.optional(),
@@ -99,6 +143,7 @@ export type TreatmentItemData = TreatmentItemInput
 export interface TreatmentItemOutput {
   id: string
   planId: string
+  procedureId: string | null
   description: string
   tooth: string | null
   value: number
@@ -132,6 +177,9 @@ export interface TreatmentPlanOutput {
   dentistId: string
   status: TreatmentPlanStatus
   totalAmount: number
+  discountType: 'PERCENTAGE' | 'FIXED' | null
+  discountValue: number | null
+  finalAmount: number
   notes: string | null
   createdAt: Date
   updatedAt: Date
@@ -198,10 +246,38 @@ export const calculateTotalAmount = (items: TreatmentItemInput[]): number => {
   }, 0)
 }
 
+export const calculateFinalAmount = (
+  totalAmount: number,
+  discountType: 'PERCENTAGE' | 'FIXED' | null,
+  discountValue: number | null
+): number => {
+  if (!discountType || discountValue === null || discountValue === undefined) {
+    return totalAmount
+  }
+
+  if (discountType === 'PERCENTAGE') {
+    const discount = (totalAmount * discountValue) / 100
+    return Math.max(0, totalAmount - discount)
+  } else {
+    // FIXED
+    return Math.max(0, totalAmount - discountValue)
+  }
+}
+
 // Schema para validar o cálculo do total
-export const treatmentPlanWithCalculatedTotalSchema = createTreatmentPlanSchema.transform((data) => ({
-  ...data,
-  totalAmount: calculateTotalAmount(data.items)
-}))
+export const treatmentPlanWithCalculatedTotalSchema = createTreatmentPlanSchema.transform((data) => {
+  const totalAmount = calculateTotalAmount(data.items)
+  const finalAmount = calculateFinalAmount(
+    totalAmount,
+    data.discountType || null,
+    data.discountValue ?? null
+  )
+  
+  return {
+    ...data,
+    totalAmount,
+    finalAmount
+  }
+})
 
 export type TreatmentPlanWithCalculatedTotal = z.infer<typeof treatmentPlanWithCalculatedTotalSchema>

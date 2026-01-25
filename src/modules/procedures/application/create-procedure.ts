@@ -50,18 +50,17 @@ export async function createProcedure(params: CreateProcedureParams): Promise<Cr
       }
     }
 
-    // 3. Validar se specialty pertence à mesma clínica
-    const specialty = await prisma.specialty.findFirst({
+    // 3. Validar se specialty existe (global)
+    const specialty = await prisma.specialty.findUnique({
       where: {
-        id: data.specialtyId,
-        clinicId
+        id: data.specialtyId
       }
     })
 
     if (!specialty) {
       return {
         success: false,
-        error: 'Especialidade não encontrada ou não pertence a esta clínica'
+        error: 'Especialidade não encontrada'
       }
     }
 

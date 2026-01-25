@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { UserRole } from '@prisma/client'
 import { auth } from '@/lib/auth'
-import { updateUser } from '@/modules/users/application'
+import { updateUser, getUserSchema } from '@/modules/users/application'
 import { userRepository } from '@/modules/users/infra/user.repository'
 
 /**
@@ -23,6 +23,18 @@ export async function GET(
     }
 
     const { id: userId } = await params
+
+    // Validar ID (deve ser CUID válido)
+    const idValidation = getUserSchema.safeParse({ id: userId })
+    if (!idValidation.success) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `ID inválido: ${idValidation.error.issues.map(i => i.message).join(', ')}` 
+        },
+        { status: 400 }
+      )
+    }
 
     // Verificar permissão: apenas OWNER/ADMIN ou o próprio usuário
     const userRole = session.user.role as UserRole
@@ -81,6 +93,18 @@ export async function PATCH(
     const { id: userId } = await params
     const userRole = session.user.role as UserRole
 
+    // Validar ID (deve ser CUID válido)
+    const idValidation = getUserSchema.safeParse({ id: userId })
+    if (!idValidation.success) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `ID inválido: ${idValidation.error.issues.map(i => i.message).join(', ')}` 
+        },
+        { status: 400 }
+      )
+    }
+
     // Ler e validar body
     let body
     try {
@@ -88,6 +112,23 @@ export async function PATCH(
     } catch {
       return NextResponse.json(
         { success: false, error: 'Body da requisição inválido' },
+        { status: 400 }
+      )
+    }
+
+    // Validar clinicId
+    const { updateUserWithIdSchema } = await import('@/modules/users/application')
+    const clinicIdValidation = updateUserWithIdSchema.safeParse({
+      id: userId,
+      data: body
+    })
+
+    if (!clinicIdValidation.success) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `Dados inválidos: ${clinicIdValidation.error.issues.map(i => i.message).join(', ')}` 
+        },
         { status: 400 }
       )
     }
@@ -146,6 +187,18 @@ export async function DELETE(
 
     const { id: userId } = await params
     const userRole = session.user.role as UserRole
+
+    // Validar ID (deve ser CUID válido)
+    const idValidation = getUserSchema.safeParse({ id: userId })
+    if (!idValidation.success) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `ID inválido: ${idValidation.error.issues.map(i => i.message).join(', ')}` 
+        },
+        { status: 400 }
+      )
+    }
 
     // Chamar use case de atualização para desativar
     const result = await updateUser({

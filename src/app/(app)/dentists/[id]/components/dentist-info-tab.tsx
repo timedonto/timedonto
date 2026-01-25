@@ -8,7 +8,20 @@ interface DentistInfoTabProps {
         }
         cro: string
         specialty?: string | null
+        specialties?: Array<{
+            id: string
+            name: string
+        }>
         commission?: number | null
+        contactInfo?: {
+            phone?: string | null
+            whatsapp?: string | null
+        } | null
+        personalInfo?: {
+            cpf?: string | null
+            birthDate?: string | null
+            gender?: string | null
+        } | null
         createdAt: Date | string
     }
 }
@@ -41,7 +54,7 @@ export function DentistInfoTab({ dentist }: DentistInfoTabProps) {
                                 CPF
                             </p>
                             <p className="text-sm font-semibold text-[#121716] dark:text-white">
-                                ---
+                                {dentist.personalInfo?.cpf || '---'}
                             </p>
                         </div>
                         <div>
@@ -49,7 +62,15 @@ export function DentistInfoTab({ dentist }: DentistInfoTabProps) {
                                 Data de Nascimento
                             </p>
                             <p className="text-sm font-semibold text-[#121716] dark:text-white">
-                                ---
+                                {dentist.personalInfo?.birthDate 
+                                    ? (() => {
+                                        try {
+                                            return new Date(dentist.personalInfo.birthDate).toLocaleDateString('pt-BR')
+                                        } catch {
+                                            return dentist.personalInfo.birthDate
+                                        }
+                                    })()
+                                    : '---'}
                             </p>
                         </div>
                         <div>
@@ -57,7 +78,13 @@ export function DentistInfoTab({ dentist }: DentistInfoTabProps) {
                                 Gênero
                             </p>
                             <p className="text-sm font-semibold text-[#121716] dark:text-white">
-                                ---
+                                {dentist.personalInfo?.gender 
+                                    ? dentist.personalInfo.gender === 'M' ? 'Masculino'
+                                      : dentist.personalInfo.gender === 'F' ? 'Feminino'
+                                      : dentist.personalInfo.gender === 'O' ? 'Outro'
+                                      : dentist.personalInfo.gender === 'N' ? 'Prefiro não informar'
+                                      : dentist.personalInfo.gender
+                                    : '---'}
                             </p>
                         </div>
                     </div>
@@ -95,7 +122,10 @@ export function DentistInfoTab({ dentist }: DentistInfoTabProps) {
                                 Especialidade
                             </p>
                             <p className="text-sm font-semibold text-[#121716] dark:text-white">
-                                {dentist.specialty || 'Clínico Geral'}
+                                {dentist.specialties && dentist.specialties.length > 0 
+                                    ? dentist.specialties.map(s => s.name).join(', ')
+                                    : dentist.specialty || 'Clínico Geral'
+                                }
                             </p>
                         </div>
                         <div>
@@ -149,7 +179,7 @@ export function DentistInfoTab({ dentist }: DentistInfoTabProps) {
                                     Telefone Principal
                                 </p>
                                 <p className="text-sm font-semibold text-[#121716] dark:text-white">
-                                    ---
+                                    {dentist.contactInfo?.phone || '---'}
                                 </p>
                             </div>
                         </div>
@@ -164,66 +194,8 @@ export function DentistInfoTab({ dentist }: DentistInfoTabProps) {
                                     WhatsApp de Atendimento
                                 </p>
                                 <p className="text-sm font-semibold text-[#121716] dark:text-white">
-                                    ---
+                                    {dentist.contactInfo?.whatsapp || '---'}
                                 </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Address Info Card */}
-                <div className="bg-white dark:bg-background-dark border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden shadow-sm">
-                    <div className="bg-[#f1f4f3]/50 dark:bg-gray-800/50 px-5 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                        <h3 className="font-bold text-sm text-[#121716] dark:text-white flex items-center gap-2 uppercase tracking-wider">
-                            <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                            </svg>
-                            Endereço e Localização
-                        </h3>
-                    </div>
-                    <div className="p-5">
-                        <div className="grid grid-cols-2 gap-4 mb-4">
-                            <div className="col-span-2">
-                                <p className="text-[11px] font-bold text-[#678380] uppercase tracking-widest mb-1">
-                                    Logradouro
-                                </p>
-                                <p className="text-sm font-semibold text-[#121716] dark:text-white">
-                                    ---
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-[11px] font-bold text-[#678380] uppercase tracking-widest mb-1">
-                                    Bairro
-                                </p>
-                                <p className="text-sm font-semibold text-[#121716] dark:text-white">
-                                    ---
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-[11px] font-bold text-[#678380] uppercase tracking-widest mb-1">
-                                    Cidade / UF
-                                </p>
-                                <p className="text-sm font-semibold text-[#121716] dark:text-white">
-                                    ---
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-[11px] font-bold text-[#678380] uppercase tracking-widest mb-1">
-                                    CEP
-                                </p>
-                                <p className="text-sm font-semibold text-[#121716] dark:text-white">
-                                    ---
-                                </p>
-                            </div>
-                        </div>
-                        <div className="w-full h-24 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center relative overflow-hidden group">
-                            <div className="relative z-10 flex flex-col items-center">
-                                <svg className="w-6 h-6 text-primary" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z" />
-                                </svg>
-                                <span className="text-[10px] font-bold text-primary uppercase mt-1">
-                                    Ver no mapa
-                                </span>
                             </div>
                         </div>
                     </div>

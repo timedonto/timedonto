@@ -72,6 +72,11 @@ export class DentistRepository {
           include: {
             procedure: true
           }
+        },
+        dentistSpecialties: {
+          include: {
+            specialty: true
+          }
         }
       },
       orderBy: {
@@ -106,6 +111,11 @@ export class DentistRepository {
           include: {
             procedure: true
           }
+        },
+        dentistSpecialties: {
+          include: {
+            specialty: true
+          }
         }
       }
     })
@@ -134,6 +144,11 @@ export class DentistRepository {
         dentistProcedures: {
           include: {
             procedure: true
+          }
+        },
+        dentistSpecialties: {
+          include: {
+            specialty: true
           }
         }
       }
@@ -169,6 +184,11 @@ export class DentistRepository {
           include: {
             procedure: true
           }
+        },
+        dentistSpecialties: {
+          include: {
+            specialty: true
+          }
         }
       }
     })
@@ -196,6 +216,12 @@ export class DentistRepository {
     if (data.bankInfo !== undefined) {
       updateData.bankInfo = (data.bankInfo as any) || null
     }
+    if (data.contactInfo !== undefined) {
+      updateData.contactInfo = (data.contactInfo as any) || null
+    }
+    if (data.personalInfo !== undefined) {
+      updateData.personalInfo = (data.personalInfo as any) || null
+    }
     if (data.commission !== undefined) {
       updateData.commission = data.commission ? new Prisma.Decimal(data.commission) : null
     }
@@ -218,6 +244,11 @@ export class DentistRepository {
         dentistProcedures: {
           include: {
             procedure: true
+          }
+        },
+        dentistSpecialties: {
+          include: {
+            specialty: true
           }
         }
       }
@@ -415,6 +446,11 @@ export class DentistRepository {
           include: {
             procedure: true
           }
+        },
+        dentistSpecialties: {
+          include: {
+            specialty: true
+          }
         }
       },
       orderBy: {
@@ -425,6 +461,66 @@ export class DentistRepository {
     })
 
     return dentists.map(this.mapToOutput)
+  }
+
+  /**
+   * Associa especialidades a um dentista (substitui associações existentes)
+   */
+  async associateSpecialties(dentistId: string, specialtyIds: string[]): Promise<void> {
+    await prisma.$transaction(async (tx) => {
+      // Remover associações existentes
+      await tx.dentistSpecialty.deleteMany({
+        where: {
+          dentistId
+        }
+      })
+
+      // Criar novas associações
+      if (specialtyIds.length > 0) {
+        const associationsData = specialtyIds.map(specialtyId => ({
+          dentistId,
+          specialtyId
+        }))
+
+        await tx.dentistSpecialty.createMany({
+          data: associationsData
+        })
+      }
+    })
+  }
+
+  /**
+   * Remove uma especialidade específica de um dentista
+   */
+  async removeSpecialty(dentistId: string, specialtyId: string): Promise<boolean> {
+    try {
+      await prisma.dentistSpecialty.deleteMany({
+        where: {
+          dentistId,
+          specialtyId
+        }
+      })
+      return true
+    } catch (error) {
+      console.error('Erro ao remover especialidade do dentista:', error)
+      return false
+    }
+  }
+
+  /**
+   * Busca especialidades de um dentista
+   */
+  async getSpecialties(dentistId: string): Promise<any[]> {
+    const associations = await prisma.dentistSpecialty.findMany({
+      where: {
+        dentistId
+      },
+      include: {
+        specialty: true
+      }
+    })
+
+    return associations.map(assoc => assoc.specialty)
   }
 
   /**
@@ -439,6 +535,8 @@ export class DentistRepository {
       specialty: dentist.specialty,
       workingHours: dentist.workingHours,
       bankInfo: dentist.bankInfo,
+      contactInfo: dentist.contactInfo,
+      personalInfo: dentist.personalInfo,
       commission: dentist.commission ? Number(dentist.commission) : null,
       createdAt: dentist.createdAt,
       updatedAt: dentist.updatedAt,
@@ -447,7 +545,8 @@ export class DentistRepository {
         ...dp.procedure,
         baseValue: Number(dp.procedure.baseValue),
         commissionPercentage: Number(dp.procedure.commissionPercentage)
-      })) || []
+      })) || [],
+      specialties: dentist.dentistSpecialties?.map((ds: any) => ds.specialty) || []
     }
   }
 }

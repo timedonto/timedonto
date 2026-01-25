@@ -67,7 +67,7 @@ export async function createDentist(params: CreateDentistParams): Promise<Create
     if (existingDentist) {
       return {
         success: false,
-        error: 'Este usuário já é um dentista na clínica'
+        error: `O usuário "${user.name}" já está cadastrado como dentista na clínica. Cada usuário pode estar vinculado a apenas um dentista.`
       }
     }
 
@@ -91,9 +91,17 @@ export async function createDentist(params: CreateDentistParams): Promise<Create
     // Criar dentista
     const newDentist = await dentistRepository.create(clinicId, validatedData)
 
+    // Associar especialidades se fornecidas
+    if (validatedData.specialtyIds && validatedData.specialtyIds.length > 0) {
+      await dentistRepository.associateSpecialties(newDentist.id, validatedData.specialtyIds)
+    }
+
+    // Buscar dentista com especialidades associadas
+    const dentistWithSpecialties = await dentistRepository.findById(newDentist.id, clinicId)
+
     return {
       success: true,
-      data: newDentist
+      data: dentistWithSpecialties || newDentist
     }
 
   } catch (error) {

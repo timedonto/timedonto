@@ -1,7 +1,7 @@
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table"
-import { MoreHorizontal, Pencil, Calendar, User, Stethoscope, ClipboardList } from "lucide-react"
+import { MoreHorizontal, Pencil, Calendar, User, Stethoscope, ClipboardList, Play } from "lucide-react"
 import { AppointmentStatus } from "@prisma/client"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
@@ -27,6 +27,12 @@ export interface Appointment {
     durationMinutes: number
     status: AppointmentStatus
     procedure: string | null
+    procedureId?: string | null
+    procedureSnapshot?: {
+        name: string
+        baseValue: number
+        commissionPercentage: number
+    } | null
     notes: string | null
     createdAt: Date
     updatedAt: Date
@@ -68,9 +74,10 @@ const statusVariants: Record<AppointmentStatus, 'default' | 'secondary' | 'succe
 
 interface ColumnsProps {
     onEdit: (appointment: Appointment) => void
+    onCheckIn?: (appointment: Appointment) => void
 }
 
-export const getColumns = ({ onEdit }: ColumnsProps): ColumnDef<Appointment>[] => [
+export const getColumns = ({ onEdit, onCheckIn }: ColumnsProps): ColumnDef<Appointment>[] => [
     {
         accessorKey: "date",
         header: ({ column }) => (
@@ -126,19 +133,6 @@ export const getColumns = ({ onEdit }: ColumnsProps): ColumnDef<Appointment>[] =
         },
     },
     {
-        accessorKey: "procedure",
-        header: ({ column }) => (
-            <DataTableColumnHeader column={column} title="Procedimento" />
-        ),
-        cell: ({ row }) => {
-            return (
-                <span className="text-muted-foreground italic">
-                    {row.getValue("procedure") || "Não informado"}
-                </span>
-            )
-        },
-    },
-    {
         accessorKey: "status",
         header: ({ column }) => (
             <DataTableColumnHeader column={column} title="Status" />
@@ -175,8 +169,14 @@ export const getColumns = ({ onEdit }: ColumnsProps): ColumnDef<Appointment>[] =
                                 <Pencil className="mr-2 h-4 w-4" />
                                 Editar agendamento
                             </DropdownMenuItem>
+                            {onCheckIn && appointment.status !== 'DONE' && appointment.status !== 'CANCELED' && (
+                                <DropdownMenuItem onClick={() => onCheckIn(appointment)}>
+                                    <Play className="mr-2 h-4 w-4 text-blue-500" />
+                                    Fazer Check-in
+                                </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => console.log("Ver detalhes", appointment.id)}>
+                            <DropdownMenuItem onClick={() => window.location.href = `/appointments/${appointment.id}`}>
                                 <Calendar className="mr-2 h-4 w-4" />
                                 Ver detalhes
                             </DropdownMenuItem>

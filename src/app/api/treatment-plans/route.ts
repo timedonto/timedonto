@@ -22,17 +22,17 @@ export async function GET(request: NextRequest) {
     const filters: any = {}
 
     const patientId = searchParams.get('patientId')
-    if (patientId) {
+    if (patientId && patientId.trim() !== '' && patientId !== 'null' && patientId !== 'undefined') {
       filters.patientId = patientId.trim()
     }
 
     const dentistId = searchParams.get('dentistId')
-    if (dentistId) {
+    if (dentistId && dentistId.trim() !== '' && dentistId !== 'null' && dentistId !== 'undefined') {
       filters.dentistId = dentistId.trim()
     }
 
     const status = searchParams.get('status')
-    if (status) {
+    if (status && status.trim() !== '') {
       filters.status = status.trim()
     }
 
@@ -46,9 +46,14 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Erro ao listar orçamentos:', error)
+
+    // Se for um erro de validação (contém "Filtros inválidos") ou outra mensagem conhecida
+    const errorMessage = error instanceof Error ? error.message : 'Erro interno do servidor'
+    const isValidationError = errorMessage.includes('inválidos') || errorMessage.includes('CUID')
+
     return NextResponse.json(
-      { success: false, error: 'Erro interno do servidor' },
-      { status: 500 }
+      { success: false, error: errorMessage },
+      { status: isValidationError ? 400 : 500 }
     )
   }
 }
@@ -105,7 +110,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Erro ao criar orçamento:', error)
     return NextResponse.json(
-      { success: false, error: 'Erro interno do servidor' },
+      { success: false, error: error instanceof Error ? error.message : 'Erro interno do servidor' },
       { status: 500 }
     )
   }

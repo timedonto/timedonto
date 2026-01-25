@@ -94,13 +94,20 @@ export const getColumns = ({ onEdit, onDelete, canEdit }: ColumnsProps): ColumnD
         header: ({ column }) => (
             <DataTableColumnHeader column={column} title="Especialidade" />
         ),
-        cell: ({ row }) => (
-            <div className="hidden lg:block">
-                {row.getValue("specialty") || (
-                    <span className="text-muted-foreground italic">Geral</span>
-                )}
-            </div>
-        ),
+        cell: ({ row }) => {
+            const dentist = row.original as any
+            const specialties = dentist.specialties && dentist.specialties.length > 0
+                ? dentist.specialties.map((s: any) => s.name).join(', ')
+                : row.getValue("specialty") as string
+            
+            return (
+                <div className="hidden lg:block">
+                    {specialties || (
+                        <span className="text-muted-foreground italic">Geral</span>
+                    )}
+                </div>
+            )
+        },
         filterFn: (row, id, value) => {
             const specialty = row.getValue(id) as string | null
             if (!specialty) return value.includes("none")

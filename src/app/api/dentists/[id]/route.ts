@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { UserRole } from '@prisma/client'
 import { auth } from '@/lib/auth'
-import { updateDentist } from '@/modules/dentists/application'
+import { updateDentist, getDentistSchema } from '@/modules/dentists/application'
 import { dentistRepository } from '@/modules/dentists/infra/dentist.repository'
 
 /**
@@ -23,6 +23,18 @@ export async function GET(
     }
 
     const { id: dentistId } = await params
+
+    // Validar ID (deve ser CUID válido)
+    const idValidation = getDentistSchema.safeParse({ id: dentistId })
+    if (!idValidation.success) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `ID inválido: ${idValidation.error.issues.map(i => i.message).join(', ')}` 
+        },
+        { status: 400 }
+      )
+    }
 
     // Buscar dentista
     const dentist = await dentistRepository.findById(dentistId, session.user.clinicId)
@@ -89,6 +101,18 @@ export async function PATCH(
 
     const { id: dentistId } = await params
 
+    // Validar ID (deve ser CUID válido)
+    const idValidation = getDentistSchema.safeParse({ id: dentistId })
+    if (!idValidation.success) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `ID inválido: ${idValidation.error.issues.map(i => i.message).join(', ')}` 
+        },
+        { status: 400 }
+      )
+    }
+
     // Ler e validar body
     let body
     try {
@@ -96,6 +120,23 @@ export async function PATCH(
     } catch {
       return NextResponse.json(
         { success: false, error: 'Body da requisição inválido' },
+        { status: 400 }
+      )
+    }
+
+    // Validar clinicId
+    const { updateDentistWithIdSchema } = await import('@/modules/dentists/application')
+    const clinicIdValidation = updateDentistWithIdSchema.safeParse({
+      id: dentistId,
+      data: body
+    })
+
+    if (!clinicIdValidation.success) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `Dados inválidos: ${clinicIdValidation.error.issues.map(i => i.message).join(', ')}` 
+        },
         { status: 400 }
       )
     }
@@ -161,6 +202,18 @@ export async function DELETE(
     }
 
     const { id: dentistId } = await params
+
+    // Validar ID (deve ser CUID válido)
+    const idValidation = getDentistSchema.safeParse({ id: dentistId })
+    if (!idValidation.success) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `ID inválido: ${idValidation.error.issues.map(i => i.message).join(', ')}` 
+        },
+        { status: 400 }
+      )
+    }
 
     // Verificar se dentista existe antes de tentar deletar
     const existingDentist = await dentistRepository.findById(dentistId, session.user.clinicId)

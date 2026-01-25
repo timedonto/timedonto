@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/select'
 import { AppointmentOutput } from '@/modules/appointments/domain/appointment.schema'
 
-// P0.4 - Schema para criar agendamento (usando procedureId)
+// Schema para criar agendamento (sem procedimento)
 const createAppointmentFormSchema = z.object({
   dentistId: z.string().min(1, 'Selecione um dentista'),
   patientId: z.string().min(1, 'Selecione um paciente'),
@@ -33,11 +33,10 @@ const createAppointmentFormSchema = z.object({
     .int('Duração deve ser um número inteiro')
     .min(15, 'Duração deve ser no mínimo 15 minutos')
     .max(480, 'Duração deve ser no máximo 8 horas'),
-  procedureId: z.string().min(1, 'Selecione um procedimento'),
   notes: z.string().optional(),
 })
 
-// P0.4 - Schema para editar agendamento (usando procedureId)
+// Schema para editar agendamento (sem procedimento)
 const updateAppointmentFormSchema = z.object({
   dentistId: z.string().min(1, 'Selecione um dentista'),
   patientId: z.string().min(1, 'Selecione um paciente'),
@@ -46,8 +45,9 @@ const updateAppointmentFormSchema = z.object({
     .int('Duração deve ser um número inteiro')
     .min(15, 'Duração deve ser no mínimo 15 minutos')
     .max(480, 'Duração deve ser no máximo 8 horas'),
-  status: z.nativeEnum(AppointmentStatus),
-  procedureId: z.string().optional(),
+  status: z.nativeEnum(AppointmentStatus, {
+    errorMap: () => ({ message: 'Status inválido' })
+  }),
   notes: z.string().optional(),
 })
 
@@ -74,18 +74,6 @@ interface Patient {
   isActive: boolean
 }
 
-// P0.5 - Interface para Procedure
-interface Procedure {
-  id: string
-  name: string
-  description: string | null
-  baseValue: number
-  isActive: boolean
-  specialty: {
-    id: string
-    name: string
-  }
-}
 
 interface AppointmentFormModalProps {
   open: boolean
@@ -100,10 +88,8 @@ export function AppointmentFormModal({ open, onOpenChange, appointment, onSucces
   const [error, setError] = useState<string | null>(null)
   const [dentists, setDentists] = useState<Dentist[]>([])
   const [patients, setPatients] = useState<Patient[]>([])
-  const [procedures, setProcedures] = useState<Procedure[]>([])
   const [loadingDentists, setLoadingDentists] = useState(false)
   const [loadingPatients, setLoadingPatients] = useState(false)
-  const [loadingProcedures, setLoadingProcedures] = useState(false)
 
   const isEditing = !!appointment
   const title = isEditing ? 'Editar Agendamento' : 'Novo Agendamento'
@@ -119,7 +105,6 @@ export function AppointmentFormModal({ open, onOpenChange, appointment, onSucces
       date: '',
       durationMinutes: 30,
       ...(isEditing && { status: AppointmentStatus.SCHEDULED }),
-      procedureId: '',
       notes: '',
     },
   })
@@ -175,31 +160,6 @@ export function AppointmentFormModal({ open, onOpenChange, appointment, onSucces
     }
   }
 
-  // P0.5 - Buscar procedimentos por dentista
-  const fetchProceduresByDentist = async (dentistId: string) => {
-    if (!dentistId) {
-      setProcedures([])
-      return
-    }
-
-    try {
-      setLoadingProcedures(true)
-      const response = await fetch(`/api/dentists/${dentistId}/procedures`)
-      const data = await response.json()
-
-      if (response.ok && data.success) {
-        setProcedures(data.data || [])
-      } else {
-        console.error('Erro ao buscar procedimentos do dentista:', data.error)
-        setProcedures([])
-      }
-    } catch (err) {
-      console.error('Erro ao buscar procedimentos do dentista:', err)
-      setProcedures([])
-    } finally {
-      setLoadingProcedures(false)
-    }
-  }
 
   // Preencher formulário quando editando ou quando patientId mudar
   useEffect(() => {
@@ -209,7 +169,6 @@ export function AppointmentFormModal({ open, onOpenChange, appointment, onSucces
       setValue('date', formatDateTimeForInput(appointment.date))
       setValue('durationMinutes', appointment.durationMinutes)
       setValue('status', appointment.status)
-      setValue('procedureId', (appointment as any).procedureId || '')
       setValue('notes', appointment.notes || '')
     } else {
       reset({
@@ -217,7 +176,6 @@ export function AppointmentFormModal({ open, onOpenChange, appointment, onSucces
         patientId: patientId || '',
         date: '',
         durationMinutes: 30,
-        procedureId: '',
         notes: '',
       })
     }
@@ -232,21 +190,6 @@ export function AppointmentFormModal({ open, onOpenChange, appointment, onSucces
     }
   }, [open])
 
-  // Observar mudança de dentista e carregar procedimentos
-  useEffect(() => {
-    const selectedDentistId = watch('dentistId')
-
-    if (selectedDentistId) {
-      // Limpar procedureId ao trocar dentista
-      setValue('procedureId', '')
-      // Carregar procedimentos do dentista
-      fetchProceduresByDentist(selectedDentistId)
-    } else {
-      // Limpar procedimentos se nenhum dentista selecionado
-      setProcedures([])
-      setValue('procedureId', '')
-    }
-  }, [watch('dentistId')])
 
   // Garantir que o patientId seja definido quando os pacientes forem carregados
   useEffect(() => {
@@ -277,13 +220,15 @@ export function AppointmentFormModal({ open, onOpenChange, appointment, onSucces
         patientId: data.patientId,
         date: new Date(data.date).toISOString(),
         durationMinutes: data.durationMinutes,
-        procedureId: data.procedureId || null,
         notes: data.notes?.trim() || null,
       }
 
-      // Adicionar status apenas ao editar
+      // Adicionar status apenas ao editar (garantir que seja string válida e não null/undefined)
       if (isEditing && 'status' in data) {
-        submitData.status = data.status
+        const statusValue = data.status
+        if (statusValue && typeof statusValue === 'string') {
+          submitData.status = statusValue
+        }
       }
 
       const response = await fetch(url, {
@@ -491,57 +436,6 @@ export function AppointmentFormModal({ open, onOpenChange, appointment, onSucces
               )}
             </div>
           )}
-
-          {/* P0.4 & P0.5 - Procedimento */}
-          <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="procedureId" className="text-xs sm:text-sm">Procedimento *</Label>
-            {loadingProcedures ? (
-              <div className="flex items-center gap-2 p-2 text-xs sm:text-sm text-muted-foreground border rounded-md">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Carregando procedimentos...
-              </div>
-            ) : (
-              <Select
-                value={watch('procedureId') || ''}
-                onValueChange={(value) => setValue('procedureId', value)}
-                disabled={loading || !watch('dentistId')}
-              >
-                <SelectTrigger className="h-11 sm:h-10 text-sm sm:text-base">
-                  <SelectValue
-                    placeholder={
-                      !watch('dentistId')
-                        ? "Selecione um dentista primeiro"
-                        : "Selecione um procedimento"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {procedures.length === 0 ? (
-                    <div className="p-2 text-xs sm:text-sm text-muted-foreground text-center">
-                      {!watch('dentistId')
-                        ? "Selecione um dentista primeiro"
-                        : "Este dentista não possui procedimentos vinculados"
-                      }
-                    </div>
-                  ) : (
-                    procedures.map((procedure) => (
-                      <SelectItem key={procedure.id} value={procedure.id}>
-                        <div className="text-xs sm:text-sm text-left">
-                          <div className="font-medium">{procedure.name}</div>
-                          <div className="text-muted-foreground text-[10px] sm:text-xs">
-                            {procedure.specialty.name} - R$ {procedure.baseValue.toFixed(2)}
-                          </div>
-                        </div>
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            )}
-            {errors.procedureId && (
-              <p className="text-xs sm:text-sm text-destructive">{errors.procedureId.message}</p>
-            )}
-          </div>
 
           {/* Observações */}
           <div className="space-y-2 sm:col-span-2">

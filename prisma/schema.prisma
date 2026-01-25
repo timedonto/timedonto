@@ -1,6 +1,7 @@
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
   engineType = "binary"
+  output     = "../src/generated/client"
 }
 
 datasource db {
@@ -52,6 +53,26 @@ enum InventoryMovementType {
   OUT
 }
 
+enum AttendanceStatus {
+  CHECKED_IN
+  IN_PROGRESS
+  DONE
+  CANCELED
+  NO_SHOW
+}
+
+enum ClinicalDocumentType {
+  ATESTADO
+  PRESCRICAO
+  EXAME
+  ENCAMINHAMENTO
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
 // =====================================================================
 // MODELS
 // =====================================================================
@@ -76,8 +97,8 @@ model Clinic {
   auditLogs          AuditLog[]
   inventoryItems     InventoryItem[]
   inventoryMovements InventoryMovement[]
-  specialties        Specialty[]
   procedures         Procedure[]
+  attendances        Attendance[]
 
   @@map("clinics")
 }
@@ -97,6 +118,7 @@ model User {
   dentist            Dentist?
   auditLogs          AuditLog[]
   inventoryMovements InventoryMovement[]
+  attendances        Attendance[]
 
   @@unique([clinicId, email])
   @@index([clinicId])
@@ -108,19 +130,25 @@ model Dentist {
   clinicId     String
   userId       String   @unique
   cro          String
-  specialty    String?
+  specialty    String? // @deprecated - Use dentistSpecialties relationship instead
   workingHours Json?
   bankInfo     Json?
+  contactInfo  Json?
+  personalInfo Json?
   commission   Decimal? @db.Decimal(5, 2)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  clinic         Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  appointments   Appointment[]
-  records        Record[]
-  treatmentPlans TreatmentPlan[]
-  dentistProcedures DentistProcedure[]
+  clinic               Clinic                @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments         Appointment[]
+  records              Record[]
+  treatmentPlans       TreatmentPlan[]
+  dentistProcedures    DentistProcedure[]
+  dentistSpecialties   DentistSpecialty[]
+  attendances          Attendance[]
+  attendanceCids       AttendanceCID[]
+  attendanceProcedures AttendanceProcedure[]
 
   @@index([clinicId])
   @@map("dentists")
@@ -145,6 +173,7 @@ model Patient {
   records        Record[]
   treatmentPlans TreatmentPlan[]
   payments       Payment[]
+  attendances    Attendance[]
 
   @@index([clinicId])
   @@index([clinicId, name])
@@ -153,19 +182,19 @@ model Patient {
 }
 
 model Appointment {
-  id              String            @id @default(cuid())
-  clinicId        String
-  dentistId       String
-  patientId       String
-  date            DateTime
-  durationMinutes Int               @default(30)
-  status          AppointmentStatus @default(SCHEDULED)
-  procedure       String?           // @deprecated - mantido por compatibilidade
-  procedureId     String?           // FK para Procedure
-  procedureSnapshot Json?           // Snapshot: { name, baseValue, commissionPercentage }
-  notes           String?           @db.Text
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  id                String            @id @default(cuid())
+  clinicId          String
+  dentistId         String
+  patientId         String
+  date              DateTime
+  durationMinutes   Int               @default(30)
+  status            AppointmentStatus @default(SCHEDULED)
+  procedure         String? // @deprecated - mantido por compatibilidade
+  procedureId       String? // FK para Procedure
+  procedureSnapshot Json? // Snapshot: { name, baseValue, commissionPercentage }
+  notes             String?           @db.Text
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
   clinic             Clinic              @relation(fields: [clinicId], references: [id], onDelete: Cascade)
   dentist            Dentist             @relation(fields: [dentistId], references: [id], onDelete: Cascade)
@@ -173,6 +202,7 @@ model Appointment {
   procedureRelation  Procedure?          @relation(fields: [procedureId], references: [id], onDelete: SetNull)
   record             Record?
   inventoryMovements InventoryMovement[]
+  attendance         Attendance?
 
   @@index([clinicId])
   @@index([clinicId, date])
@@ -188,6 +218,7 @@ model Record {
   patientId     String
   dentistId     String
   appointmentId String?  @unique
+  attendanceId  String?  @unique
   description   String   @db.Text
   procedures    Json?
   odontogram    Json?
@@ -198,22 +229,27 @@ model Record {
   patient     Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
   dentist     Dentist      @relation(fields: [dentistId], references: [id], onDelete: Cascade)
   appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  attendance  Attendance?  @relation(fields: [attendanceId], references: [id], onDelete: SetNull)
 
   @@index([clinicId])
   @@index([clinicId, patientId])
+  @@index([attendanceId])
   @@map("records")
 }
 
 model TreatmentPlan {
-  id          String              @id @default(cuid())
-  clinicId    String
-  patientId   String
-  dentistId   String
-  status      TreatmentPlanStatus @default(OPEN)
-  totalAmount Decimal             @db.Decimal(10, 2)
-  notes       String?             @db.Text
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  id           String              @id @default(cuid())
+  clinicId     String
+  patientId    String
+  dentistId    String
+  status       TreatmentPlanStatus @default(OPEN)
+  totalAmount  Decimal             @db.Decimal(10, 2)
+  discountType DiscountType?
+  discountValue Decimal?            @db.Decimal(10, 2)
+  finalAmount  Decimal?            @db.Decimal(10, 2)
+  notes        String?             @db.Text
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
 
   clinic                Clinic                 @relation(fields: [clinicId], references: [id], onDelete: Cascade)
   patient               Patient                @relation(fields: [patientId], references: [id], onDelete: Cascade)
@@ -228,27 +264,33 @@ model TreatmentPlan {
 }
 
 model TreatmentItem {
-  id          String  @id @default(cuid())
+  id          String   @id @default(cuid())
   planId      String
+  procedureId String?
   description String
   tooth       String?
-  value       Decimal @db.Decimal(10, 2)
-  quantity    Int     @default(1)
+  value       Decimal  @db.Decimal(10, 2)
+  quantity    Int      @default(1)
 
-  plan TreatmentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  plan      TreatmentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  procedure Procedure?   @relation(fields: [procedureId], references: [id], onDelete: SetNull)
 
   @@index([planId])
+  @@index([procedureId])
   @@map("treatment_items")
 }
 
 model Payment {
-  id          String        @id @default(cuid())
-  clinicId    String
-  patientId   String?
-  amount      Decimal       @db.Decimal(10, 2)
-  method      PaymentMethod
-  description String?
-  createdAt   DateTime      @default(now())
+  id            String        @id @default(cuid())
+  clinicId      String
+  patientId     String?
+  originalAmount Decimal?      @db.Decimal(10, 2)
+  discountType  DiscountType?
+  discountValue Decimal?       @db.Decimal(10, 2)
+  amount        Decimal       @db.Decimal(10, 2) // finalAmount - mantido como 'amount' para compatibilidade
+  method        PaymentMethod
+  description   String?
+  createdAt     DateTime      @default(now())
 
   clinic                Clinic                 @relation(fields: [clinicId], references: [id], onDelete: Cascade)
   patient               Patient?               @relation(fields: [patientId], references: [id], onDelete: SetNull)
@@ -355,19 +397,28 @@ model InventoryMovement {
 
 model Specialty {
   id          String   @id @default(cuid())
-  clinicId    String
-  name        String
+  name        String   @unique
   description String?
-  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  procedures  Procedure[]
+  procedures         Procedure[]
+  dentistSpecialties DentistSpecialty[]
 
-  @@index([clinicId])
-  @@index([clinicId, name])
   @@map("specialties")
+}
+
+model CID {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  category    String
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([code])
+  @@index([category])
+  @@map("cids")
 }
 
 model Procedure {
@@ -382,16 +433,19 @@ model Procedure {
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
-  clinic            Clinic             @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  specialty         Specialty          @relation(fields: [specialtyId], references: [id], onDelete: Cascade)
-  dentistProcedures DentistProcedure[]
-  appointments      Appointment[]
+  clinic               Clinic                @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  specialty            Specialty             @relation(fields: [specialtyId], references: [id], onDelete: Cascade)
+  dentistProcedures    DentistProcedure[]
+  appointments         Appointment[]
+  attendanceProcedures AttendanceProcedure[]
+  treatmentItems       TreatmentItem[]
 
   @@index([clinicId])
   @@index([specialtyId])
   @@index([clinicId, name])
   @@map("procedures")
 }
+
 model DentistProcedure {
   id          String   @id @default(cuid())
   dentistId   String
@@ -405,4 +459,125 @@ model DentistProcedure {
   @@index([dentistId])
   @@index([procedureId])
   @@map("dentist_procedures")
+}
+
+model DentistSpecialty {
+  id          String   @id @default(cuid())
+  dentistId   String
+  specialtyId String
+  createdAt   DateTime @default(now())
+
+  dentist   Dentist   @relation(fields: [dentistId], references: [id], onDelete: Cascade)
+  specialty Specialty @relation(fields: [specialtyId], references: [id], onDelete: Cascade)
+
+  @@unique([dentistId, specialtyId])
+  @@index([dentistId])
+  @@index([specialtyId])
+  @@map("dentist_specialties")
+}
+
+model Attendance {
+  id            String           @id @default(cuid())
+  clinicId      String
+  appointmentId String?          @unique
+  patientId     String
+  dentistId     String?
+  status        AttendanceStatus @default(CHECKED_IN)
+
+  arrivalAt  DateTime
+  startedAt  DateTime?
+  finishedAt DateTime?
+
+  createdByRole UserRole
+  createdById   String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clinic      Clinic       @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  patient     Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  dentist     Dentist?     @relation(fields: [dentistId], references: [id], onDelete: SetNull)
+  createdBy   User         @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  cids       AttendanceCID[]
+  procedures AttendanceProcedure[]
+  odontogram AttendanceOdontogram?
+  documents  ClinicalDocument[]
+  record     Record?
+
+  @@index([clinicId])
+  @@index([clinicId, status])
+  @@index([clinicId, arrivalAt])
+  @@index([clinicId, patientId])
+  @@index([clinicId, dentistId])
+  @@map("attendances")
+}
+
+model AttendanceCID {
+  id                 String  @id @default(cuid())
+  attendanceId       String
+  cidCode            String
+  description        String
+  observation        String? @db.Text
+  createdByDentistId String
+
+  attendance Attendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  createdBy  Dentist    @relation(fields: [createdByDentistId], references: [id], onDelete: Cascade)
+
+  @@index([attendanceId])
+  @@index([createdByDentistId])
+  @@map("attendance_cids")
+}
+
+model AttendanceProcedure {
+  id             String   @id @default(cuid())
+  attendanceId   String
+  procedureId    String? // FK para Procedure (nullable para compatibilidade)
+  procedureCode  String? // @deprecated - manter por compatibilidade
+  description    String
+  tooth          String?
+  surface        String? // @deprecated - usar faces
+  faces          String[] // Array de faces: ["O", "M", "D", "V", "L"]
+  quantity       Int      @default(1)
+  clinicalStatus String? // Enum: SAUDAVEL, CARIE, RESTAURADO, AUSENTE, EM_TRATAMENTO, EXTRACAO
+  price          Decimal? @db.Decimal(10, 2) // Preço no momento do registro
+  dentistId      String? // FK para Dentist responsável
+  observations   String?  @db.Text // Observações clínicas
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attendance Attendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  procedure  Procedure? @relation(fields: [procedureId], references: [id], onDelete: SetNull)
+  dentist    Dentist?   @relation(fields: [dentistId], references: [id], onDelete: SetNull)
+
+  @@index([attendanceId])
+  @@index([procedureId])
+  @@index([dentistId])
+  @@map("attendance_procedures")
+}
+
+model AttendanceOdontogram {
+  attendanceId String @id
+  data         Json
+
+  attendance Attendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+
+  @@map("attendance_odontograms")
+}
+
+model ClinicalDocument {
+  id           String               @id @default(cuid())
+  attendanceId String
+  type         ClinicalDocumentType
+  payload      Json
+  generatedBy  String
+  generatedAt  DateTime             @default(now())
+
+  attendance Attendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+
+  @@index([attendanceId])
+  @@index([type])
+  @@map("clinical_documents")
 }

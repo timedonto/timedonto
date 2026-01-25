@@ -27,6 +27,7 @@ import {
 
 import { DataTablePagination } from "./data-table-pagination"
 import { DataTableToolbar } from "./data-table-toolbar"
+import { cn } from "@/lib/utils"
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[]
@@ -44,6 +45,7 @@ interface DataTableProps<TData, TValue> {
     }[]
     loading?: boolean
     extraToolbarContent?: React.ReactNode
+    getRowClassName?: (row: TData) => string
 }
 
 export function DataTable<TData, TValue>({
@@ -54,6 +56,7 @@ export function DataTable<TData, TValue>({
     filters,
     loading = false,
     extraToolbarContent,
+    getRowClassName,
 }: DataTableProps<TData, TValue>) {
     const [rowSelection, setRowSelection] = React.useState({})
     const [columnVisibility, setColumnVisibility] =
@@ -135,6 +138,7 @@ export function DataTable<TData, TValue>({
                                 <TableRow
                                     key={row.id}
                                     data-state={row.getIsSelected() && "selected"}
+                                    className={getRowClassName ? getRowClassName(row.original) : undefined}
                                 >
                                     {row.getVisibleCells().map((cell) => (
                                         <TableCell key={cell.id}>

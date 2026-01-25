@@ -1,8 +1,6 @@
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/database'
 import {
-    CreateSpecialtyData,
-    UpdateSpecialtyData,
     ListSpecialtiesFilters,
     SpecialtyOutput
 } from '../domain/specialty.schema'
@@ -10,28 +8,10 @@ import {
 export class SpecialtyRepository {
 
     /**
-     * Cria uma nova especialidade vinculada à clínica
+     * Lista todas as especialidades globais com filtros opcionais
      */
-    async create(clinicId: string, data: CreateSpecialtyData): Promise<SpecialtyOutput> {
-        const specialty = await prisma.specialty.create({
-            data: {
-                clinicId,
-                name: data.name,
-                description: data.description || null,
-                isActive: data.isActive ?? true,
-            }
-        })
-
-        return this.mapToOutput(specialty)
-    }
-
-    /**
-     * Lista especialidades por clínica com filtros opcionais
-     */
-    async findMany(clinicId: string, filters?: ListSpecialtiesFilters): Promise<SpecialtyOutput[]> {
-        const where: Prisma.SpecialtyWhereInput = {
-            clinicId,
-        }
+    async findMany(filters?: ListSpecialtiesFilters): Promise<SpecialtyOutput[]> {
+        const where: Prisma.SpecialtyWhereInput = {}
 
         // Aplicar filtro de busca por nome
         if (filters?.search) {
@@ -39,11 +19,6 @@ export class SpecialtyRepository {
                 contains: filters.search,
                 mode: 'insensitive'
             }
-        }
-
-        // Aplicar filtro de status ativo/inativo
-        if (filters?.isActive !== undefined) {
-            where.isActive = filters.isActive
         }
 
         const specialties = await prisma.specialty.findMany({
@@ -57,13 +32,12 @@ export class SpecialtyRepository {
     }
 
     /**
-     * Busca uma especialidade por ID validando que pertence à clínica
+     * Busca uma especialidade por ID
      */
-    async findById(id: string, clinicId: string): Promise<SpecialtyOutput | null> {
-        const specialty = await prisma.specialty.findFirst({
+    async findById(id: string): Promise<SpecialtyOutput | null> {
+        const specialty = await prisma.specialty.findUnique({
             where: {
-                id,
-                clinicId
+                id
             }
         })
 
@@ -71,91 +45,10 @@ export class SpecialtyRepository {
     }
 
     /**
-     * Atualiza uma especialidade existente
+     * Lista todas as especialidades para seletores (apenas dados básicos)
      */
-    async update(id: string, clinicId: string, data: UpdateSpecialtyData): Promise<SpecialtyOutput | null> {
-        const updateData: Prisma.SpecialtyUpdateInput = {}
-
-        if (data.name !== undefined) {
-            updateData.name = data.name
-        }
-
-        if (data.description !== undefined) {
-            updateData.description = data.description || null
-        }
-
-        if (data.isActive !== undefined) {
-            updateData.isActive = data.isActive
-        }
-
-        const specialty = await prisma.specialty.update({
-            where: {
-                id,
-                clinicId
-            },
-            data: updateData
-        })
-
-        return this.mapToOutput(specialty)
-    }
-
-    /**
-     * Inativa uma especialidade (soft delete)
-     */
-    async delete(id: string, clinicId: string): Promise<boolean> {
-        try {
-            await prisma.specialty.update({
-                where: {
-                    id,
-                    clinicId
-                },
-                data: {
-                    isActive: false
-                }
-            })
-            return true
-        } catch (error) {
-            console.error('Erro ao inativar especialidade:', error)
-            return false
-        }
-    }
-
-    /**
-     * Verifica se uma especialidade com o mesmo nome já existe na clínica
-     */
-    async nameExists(name: string, clinicId: string, excludeSpecialtyId?: string): Promise<boolean> {
-        const where: Prisma.SpecialtyWhereInput = {
-            name: {
-                equals: name.trim(),
-                mode: 'insensitive'
-            },
-            clinicId,
-            isActive: true
-        }
-
-        if (excludeSpecialtyId) {
-            where.id = {
-                not: excludeSpecialtyId
-            }
-        }
-
-        const specialty = await prisma.specialty.findFirst({
-            where,
-            select: { id: true }
-        })
-
-        return !!specialty
-    }
-
-    /**
-     * Lista especialidades ativas para seletores (apenas dados básicos)
-     */
-    async findActiveSpecialties(clinicId: string): Promise<Pick<SpecialtyOutput, 'id' | 'name'>[]> {
+    async findActiveSpecialties(): Promise<Pick<SpecialtyOutput, 'id' | 'name'>[]> {
         const specialties = await prisma.specialty.findMany({
-            where: {
-                clinicId,
-                isActive: true
-            },
             select: {
                 id: true,
                 name: true
@@ -169,17 +62,27 @@ export class SpecialtyRepository {
     }
 
     /**
-     * Conta total de especialidades ativas na clínica
+     * Conta total de especialidades
      */
-    async countActiveSpecialties(clinicId: string): Promise<number> {
-        const count = await prisma.specialty.count({
+    async countSpecialties(): Promise<number> {
+        const count = await prisma.specialty.count()
+        return count
+    }
+
+    /**
+     * Busca especialidade por nome exato
+     */
+    async findByName(name: string): Promise<SpecialtyOutput | null> {
+        const specialty = await prisma.specialty.findFirst({
             where: {
-                clinicId,
-                isActive: true
+                name: {
+                    equals: name.trim(),
+                    mode: 'insensitive'
+                }
             }
         })
 
-        return count
+        return specialty ? this.mapToOutput(specialty) : null
     }
 
     /**
@@ -188,10 +91,8 @@ export class SpecialtyRepository {
     private mapToOutput(specialty: any): SpecialtyOutput {
         return {
             id: specialty.id,
-            clinicId: specialty.clinicId,
             name: specialty.name,
             description: specialty.description,
-            isActive: specialty.isActive,
             createdAt: specialty.createdAt,
             updatedAt: specialty.updatedAt
         }

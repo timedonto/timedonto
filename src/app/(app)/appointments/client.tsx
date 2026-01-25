@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import { AppointmentStatus } from "@prisma/client"
 import {
     Plus,
@@ -43,8 +44,78 @@ export function AppointmentsClient({
     selectedDate,
     onDateChange,
 }: AppointmentsClientProps) {
+    const router = useRouter()
+    const [isMounted, setIsMounted] = React.useState(false)
+
+    React.useEffect(() => {
+        setIsMounted(true)
+    }, [])
+
+    const handleCheckIn = async (appointment: Appointment) => {
+        try {
+            const response = await fetch('/api/attendances', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    patientId: appointment.patientId,
+                    appointmentId: appointment.id
+                })
+            })
+            
+            // Verificar se a resposta tem conteúdo antes de tentar fazer parse
+            const contentType = response.headers.get('content-type')
+            let data: any = {}
+            
+            if (contentType && contentType.includes('application/json')) {
+                try {
+                    const text = await response.text()
+                    if (text) {
+                        data = JSON.parse(text)
+                    }
+                } catch (parseError) {
+                    console.error('Erro ao fazer parse da resposta:', parseError)
+                    data = {
+                        success: false,
+                        error: `Erro ao processar resposta do servidor (${response.status})`
+                    }
+                }
+            } else {
+                // Se não for JSON, criar objeto de erro
+                data = {
+                    success: false,
+                    error: `Resposta inválida do servidor (${response.status})`
+                }
+            }
+            
+            if (!response.ok) {
+                const errorMessage = data?.error || data?.message || `Erro ao fazer check-in (${response.status})`
+                console.error('Erro na resposta:', { 
+                    status: response.status, 
+                    statusText: response.statusText,
+                    data,
+                    contentType 
+                })
+                alert(errorMessage)
+                return
+            }
+            
+            if (data?.success) {
+                // Redirecionar para fila de espera
+                router.push('/attendances/waiting-room')
+            } else {
+                const errorMessage = data?.error || data?.message || 'Erro ao fazer check-in'
+                console.error('Check-in falhou:', data)
+                alert(errorMessage)
+            }
+        } catch (err: any) {
+            console.error('Erro ao fazer check-in:', err)
+            const errorMessage = err?.message || 'Erro ao fazer check-in. Tente novamente.'
+            alert(errorMessage)
+        }
+    }
+
     const columns = React.useMemo(
-        () => getColumns({ onEdit }),
+        () => getColumns({ onEdit, onCheckIn: handleCheckIn }),
         [onEdit]
     )
 
@@ -97,6 +168,24 @@ export function AppointmentsClient({
             )}
         </div>
     )
+
+    if (!isMounted) {
+        return (
+            <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight">Agenda</h1>
+                        <p className="text-muted-foreground">
+                            Gerencie os agendamentos e consultas da clínica
+                        </p>
+                    </div>
+                </div>
+                <div className="flex items-center justify-center h-64">
+                    <div className="text-muted-foreground">Carregando...</div>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="space-y-6">

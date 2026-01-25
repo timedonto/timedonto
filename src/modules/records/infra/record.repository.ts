@@ -61,6 +61,7 @@ export class RecordRepository {
         patientId: data.patientId,
         dentistId: data.dentistId,
         appointmentId: data.appointmentId,
+        attendanceId: data.attendanceId,
         description: data.description,
         procedures: data.procedures ? JSON.stringify(data.procedures) : null,
         odontogram: data.odontogram ? JSON.stringify(data.odontogram) : null,

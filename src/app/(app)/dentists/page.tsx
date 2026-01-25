@@ -31,6 +31,8 @@ export default function DentistsPage() {
   const [currentUser, setCurrentUser] = useState<SessionUser | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedDentist, setSelectedDentist] = useState<Dentist | undefined>(undefined)
+  const [specialties, setSpecialties] = useState<any[]>([])
+  const [users, setUsers] = useState<any[]>([])
 
   // Verificar se usuário pode editar (OWNER ou ADMIN)
   const canEdit = currentUser?.role === UserRole.OWNER || currentUser?.role === UserRole.ADMIN
@@ -76,11 +78,48 @@ export default function DentistsPage() {
     }
   }
 
+  // Carregar especialidades
+  const fetchSpecialties = async () => {
+    try {
+      const response = await fetch('/api/specialties')
+      if (response.ok) {
+        const data = await response.json()
+        setSpecialties(Array.isArray(data) ? data : [])
+      } else {
+        setSpecialties([])
+      }
+    } catch (err) {
+      console.error('Erro ao carregar especialidades:', err)
+      setSpecialties([])
+    }
+  }
+
+  // Carregar usuários elegíveis para se tornarem dentistas
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/users/eligible')
+      if (response.ok) {
+        const result = await response.json()
+        // A API retorna { success: true, data: UserOutput[] }
+        setUsers(result.data || [])
+      } else {
+        setUsers([])
+      }
+    } catch (err) {
+      console.error('Erro ao carregar usuários elegíveis:', err)
+      setUsers([])
+    }
+  }
+
   // Carregar dados ao montar o componente
   useEffect(() => {
     const loadData = async () => {
       await fetchSession()
-      await fetchDentists()
+      await Promise.all([
+        fetchDentists(),
+        fetchSpecialties(),
+        fetchUsers()
+      ])
     }
     loadData()
   }, [])
@@ -143,6 +182,8 @@ export default function DentistsPage() {
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
         dentist={selectedDentist as any}
+        users={users}
+        specialties={specialties}
         onSuccess={handleModalSuccess}
       />
     </>

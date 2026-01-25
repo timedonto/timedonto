@@ -11,15 +11,12 @@ export default async function DentistDetailsPage(props: { params: Promise<{ id: 
     const params = await props.params;
     const session = await auth()
 
-    // Guard for OWNER/ADMIN only
-    if (session?.user?.role !== UserRole.OWNER && session?.user?.role !== UserRole.ADMIN) {
-        // Check if it's the dentist themselves (though they have /profile, we might want to let them see this too)
-        // But per requirements, this is a "Visão Administrativa" accessible by OWNER and ADMIN.
+    if (!session?.user?.id || !session?.user?.clinicId) {
         return (
             <div className="container mx-auto py-10">
                 <Card className="border-red-200 bg-red-50">
                     <CardContent className="pt-6">
-                        <p className="text-red-600 font-medium">Acesso negado. Apenas administradores podem acessar esta página.</p>
+                        <p className="text-red-600 font-medium">Acesso negado. Faça login para continuar.</p>
                     </CardContent>
                 </Card>
             </div>
@@ -32,6 +29,22 @@ export default async function DentistDetailsPage(props: { params: Promise<{ id: 
         notFound()
     }
 
+    // Verificar permissões: OWNER/ADMIN podem ver qualquer dentista, DENTIST apenas o próprio
+    const isOwnerOrAdmin = session.user.role === UserRole.OWNER || session.user.role === UserRole.ADMIN
+    const isOwnProfile = session.user.id === dentist.userId
+
+    if (!isOwnerOrAdmin && !isOwnProfile) {
+        return (
+            <div className="container mx-auto py-10">
+                <Card className="border-red-200 bg-red-50">
+                    <CardContent className="pt-6">
+                        <p className="text-red-600 font-medium">Acesso negado. Você só pode visualizar seu próprio perfil.</p>
+                    </CardContent>
+                </Card>
+            </div>
+        )
+    }
+
     const availableProcedures = await getAvailableProcedures()
 
     return (
@@ -41,6 +54,7 @@ export default async function DentistDetailsPage(props: { params: Promise<{ id: 
                     dentist={dentist}
                     availableProcedures={availableProcedures}
                     currentUserRole={session.user.role as any}
+                    currentUserId={session.user.id}
                 />
             </Suspense>
         </div>

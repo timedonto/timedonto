@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Erro ao listar pagamentos:', error)
     return NextResponse.json(
-      { success: false, error: 'Erro interno do servidor' },
+      { success: false, error: error instanceof Error ? error.message : 'Erro interno do servidor' },
       { status: 500 }
     )
   }
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Erro ao criar pagamento:', error)
     return NextResponse.json(
-      { success: false, error: 'Erro interno do servidor' },
+      { success: false, error: error instanceof Error ? error.message : 'Erro interno do servidor' },
       { status: 500 }
     )
   }

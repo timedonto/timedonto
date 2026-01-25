@@ -30,7 +30,8 @@ export async function GET(
                     clinicId: session.user.clinicId // Garantir isolamento multi-tenant
                 },
                 procedure: {
-                    isActive: true // Apenas procedimentos ativos
+                    isActive: true, // Apenas procedimentos ativos
+                    clinicId: session.user.clinicId // Garantir que procedimento pertence à clínica
                 }
             },
             include: {

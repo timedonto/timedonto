@@ -150,6 +150,12 @@ export interface AppointmentOutput {
   durationMinutes: number
   status: AppointmentStatus
   procedure: string | null
+  procedureId?: string | null
+  procedureSnapshot?: {
+    name: string
+    baseValue: number
+    commissionPercentage: number
+  } | null
   notes: string | null
   createdAt: Date
   updatedAt: Date

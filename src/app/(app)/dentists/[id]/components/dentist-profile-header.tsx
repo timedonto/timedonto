@@ -14,6 +14,10 @@ interface DentistProfileHeaderProps {
         }
         cro: string
         specialty?: string | null
+        specialties?: Array<{
+            id: string
+            name: string
+        }>
         procedures?: Array<{
             id: string
             name: string
@@ -22,23 +26,31 @@ interface DentistProfileHeaderProps {
             } | null
         }>
     }
+    currentUserRole: string
+    currentUserId: string
+    onEditClick: () => void
 }
 
-export function DentistProfileHeader({ dentist }: DentistProfileHeaderProps) {
+export function DentistProfileHeader({ dentist, currentUserRole, currentUserId, onEditClick }: DentistProfileHeaderProps) {
     const router = useRouter()
 
-    // Get unique specialties from procedures
-    const specialties = dentist.procedures
-        ? Array.from(
-            new Set(
-                dentist.procedures
-                    .map((p) => p.specialty?.name)
-                    .filter((name): name is string => !!name)
-            )
-        ).slice(0, 2) // Show max 2 specialties
-        : dentist.specialty
-            ? [dentist.specialty]
-            : []
+    // Ocultar botão para RECEPTIONIST
+    const canEdit = currentUserRole !== 'RECEPTIONIST'
+
+    // Get specialties from the relationship first, fallback to procedures or text field
+    const specialties = dentist.specialties && dentist.specialties.length > 0
+        ? dentist.specialties.map(s => s.name).slice(0, 2) // Show max 2 specialties
+        : dentist.procedures
+            ? Array.from(
+                new Set(
+                    dentist.procedures
+                        .map((p) => p.specialty?.name)
+                        .filter((name): name is string => !!name)
+                )
+            ).slice(0, 2) // Show max 2 specialties
+            : dentist.specialty
+                ? [dentist.specialty]
+                : []
 
     return (
         <div className="bg-white dark:bg-background-dark border border-gray-200 dark:border-gray-800 rounded-lg p-6 mb-6 shadow-sm">
@@ -107,12 +119,15 @@ export function DentistProfileHeader({ dentist }: DentistProfileHeaderProps) {
                         <ArrowLeft className="w-4 h-4" />
                         <span>Voltar</span>
                     </Button>
-                    <Button
-                        className="flex flex-1 md:flex-none items-center justify-center gap-2 bg-primary hover:bg-primary-dark shadow-md shadow-primary/20"
-                    >
-                        <Edit className="w-4 h-4" />
-                        <span>Editar Perfil</span>
-                    </Button>
+                    {canEdit && (
+                        <Button
+                            className="flex flex-1 md:flex-none items-center justify-center gap-2 bg-primary hover:bg-primary-dark shadow-md shadow-primary/20"
+                            onClick={onEditClick}
+                        >
+                            <Edit className="w-4 h-4" />
+                            <span>Editar Perfil</span>
+                        </Button>
+                    )}
                 </div>
             </div>
         </div>

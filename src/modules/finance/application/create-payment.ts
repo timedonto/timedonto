@@ -82,6 +82,35 @@ export async function createPayment(params: CreatePaymentParams): Promise<Create
           }
         }
       }
+
+      // Validar desconto não gera valor negativo
+      if (validatedData.discountType && validatedData.discountValue !== undefined && validatedData.discountValue !== null) {
+        // Buscar os orçamentos para calcular total
+        const plans = await Promise.all(
+          validatedData.treatmentPlanIds.map(id => treatmentPlanRepository.findById(id, clinicId))
+        )
+        const totalFromPlansCalculated = plans
+          .filter(p => p !== null)
+          .reduce((sum, p) => sum + (p!.finalAmount || 0), 0)
+
+        if (validatedData.discountType === 'FIXED' && validatedData.discountValue > totalFromPlansCalculated) {
+          return {
+            success: false,
+            error: 'Desconto fixo não pode exceder o valor total dos orçamentos selecionados'
+          }
+        }
+      }
+    } else {
+      // Quando não há orçamentos, validar desconto no amount fornecido
+      if (validatedData.discountType && validatedData.discountValue !== undefined && validatedData.discountValue !== null) {
+        const originalAmount = validatedData.amount!
+        if (validatedData.discountType === 'FIXED' && validatedData.discountValue > originalAmount) {
+          return {
+            success: false,
+            error: 'Desconto fixo não pode exceder o valor do pagamento'
+          }
+        }
+      }
     }
 
     // Criar pagamento

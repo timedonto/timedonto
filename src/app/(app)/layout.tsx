@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { redirect } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { Sidebar } from '@/components/layout/sidebar'
 import { Header } from '@/components/layout/header'
 
@@ -13,6 +13,13 @@ export default function AppLayout({
 }) {
   const { data: session, status } = useSession()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const router = useRouter()
+
+  useEffect(() => {
+    if (status === 'unauthenticated' || (status !== 'loading' && !session?.user)) {
+      router.push('/login')
+    }
+  }, [status, session, router])
 
   if (status === 'loading') {
     return (
@@ -23,7 +30,11 @@ export default function AppLayout({
   }
 
   if (status === 'unauthenticated' || !session?.user) {
-    redirect('/login')
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
   }
 
   const user = session.user as any
@@ -38,7 +49,7 @@ export default function AppLayout({
         />
       )}
       
-      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} user={session?.user as any} />
       
       <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
         <Header user={user} onMenuClick={() => setIsSidebarOpen(true)} />

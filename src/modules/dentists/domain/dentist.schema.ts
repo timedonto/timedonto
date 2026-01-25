@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { ProcedureOutput } from '../../procedures/domain/procedure.schema'
+import { SpecialtyOutput } from '../../specialties/domain/specialty.schema'
 
 // =====================================================================
 // HELPER SCHEMAS
@@ -10,6 +11,30 @@ const workingHoursSchema = z.record(z.string(), z.any()).optional().nullable()
 
 // Schema para dados bancários (JSON flexível)
 const bankInfoSchema = z.record(z.string(), z.any()).optional().nullable()
+
+// Schema para informações de contato (JSON flexível)
+const contactInfoSchema = z.object({
+  phone: z.string().optional().nullable(),
+  whatsapp: z.string().optional().nullable(),
+}).optional().nullable()
+
+// Schema para informações pessoais (JSON flexível)
+const personalInfoSchema = z.object({
+  cpf: z.string()
+    .max(14, 'CPF deve ter no máximo 14 caracteres')
+    .regex(/^(\d{3}\.?\d{3}\.?\d{3}-?\d{2})?$/, 'CPF deve ter formato válido (000.000.000-00)')
+    .optional()
+    .nullable()
+    .or(z.literal('')), // Permite string vazia
+  birthDate: z.string()
+    .optional()
+    .nullable()
+    .or(z.literal('')), // Permite string vazia
+  gender: z.union([
+    z.enum(['M', 'F', 'O', 'N']),
+    z.literal('') // Permite string vazia
+  ]).optional().nullable(),
+}).optional().nullable()
 
 // =====================================================================
 // VALIDATION SCHEMAS
@@ -40,7 +65,11 @@ export const createDentistSchema = z.object({
     .number()
     .min(0, 'Comissão deve ser no mínimo 0%')
     .max(100, 'Comissão deve ser no máximo 100%')
+    .optional(),
+  specialtyIds: z
+    .array(z.string().cuid('ID da especialidade deve ser um CUID válido'))
     .optional()
+    .default([])
 })
 
 export const updateDentistSchema = z.object({
@@ -62,6 +91,8 @@ export const updateDentistSchema = z.object({
     .nullable(),
   workingHours: workingHoursSchema,
   bankInfo: bankInfoSchema,
+  contactInfo: contactInfoSchema,
+  personalInfo: personalInfoSchema,
   commission: z
     .number()
     .min(0, 'Comissão deve ser no mínimo 0%')
@@ -92,6 +123,8 @@ export const updateDentistProfileSchema = z.object({
   specialty: z.string().optional().nullable(),
   workingHours: workingHoursSchema,
   bankInfo: bankInfoSchema,
+  contactInfo: contactInfoSchema,
+  personalInfo: personalInfoSchema,
   commission: z
     .number()
     .min(0, 'Comissão deve ser no mínimo 0%')
@@ -124,17 +157,46 @@ export type UpdateDentistProfileInput = z.infer<typeof updateDentistProfileSchem
 export type ListDentistsInput = z.infer<typeof listDentistsSchema>
 
 // =====================================================================
-// OUTPUT INTERFACE
+// DENTIST SPECIALTY SCHEMAS
 // =====================================================================
+
+export const associateDentistSpecialtiesSchema = z.object({
+  dentistId: z.string().cuid('ID do dentista deve ser um CUID válido'),
+  specialtyIds: z.array(z.string().cuid('ID da especialidade deve ser um CUID válido'))
+    .min(1, 'Pelo menos uma especialidade deve ser selecionada')
+    .max(10, 'Máximo de 10 especialidades permitidas')
+})
+
+export const removeDentistSpecialtySchema = z.object({
+  dentistId: z.string().cuid('ID do dentista deve ser um CUID válido'),
+  specialtyId: z.string().cuid('ID da especialidade deve ser um CUID válido')
+})
+
+export type AssociateDentistSpecialtiesInput = z.infer<typeof associateDentistSpecialtiesSchema>
+export type RemoveDentistSpecialtyInput = z.infer<typeof removeDentistSpecialtySchema>
+
+// =====================================================================
+// OUTPUT INTERFACES
+// =====================================================================
+
+export interface DentistSpecialtyOutput {
+  id: string
+  dentistId: string
+  specialtyId: string
+  createdAt: Date
+  specialty: SpecialtyOutput
+}
 
 export interface DentistOutput {
   id: string
   clinicId: string
   userId: string
   cro: string
-  specialty: string | null
+  specialty: string | null // @deprecated - Use specialties relationship instead
   workingHours: Record<string, any> | null
   bankInfo: Record<string, any> | null
+  contactInfo: Record<string, any> | null
+  personalInfo: Record<string, any> | null
   commission: number | null
   createdAt: Date
   updatedAt: Date
@@ -145,6 +207,7 @@ export interface DentistOutput {
     isActive: boolean
   }
   procedures: ProcedureOutput[]
+  specialties?: SpecialtyOutput[] // New Many-to-Many relationship
 }
 
 // =====================================================================

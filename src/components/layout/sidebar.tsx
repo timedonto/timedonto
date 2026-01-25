@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { UserRole } from '@prisma/client'
@@ -17,7 +17,8 @@ import {
   UserCog,
   X,
   Briefcase,
-  UserCircle
+  UserCircle,
+  ClipboardList
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { APP_NAME } from '@/config/constants'
@@ -33,6 +34,7 @@ interface MenuItem {
 const mainMenuItems: MenuItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/appointments', label: 'Agenda', icon: Calendar },
+  { href: '/attendances', label: 'Atendimentos', icon: ClipboardList },
   { href: '/patients', label: 'Pacientes', icon: Users },
   { href: '/dentists', label: 'Dentistas', icon: Stethoscope },
   { href: '/treatment-plans', label: 'Orçamentos', icon: FileText },
@@ -85,44 +87,22 @@ interface SessionUser {
 interface SidebarProps {
   isOpen: boolean
   onClose: () => void
+  user?: SessionUser | null
 }
 
-export function Sidebar({ isOpen, onClose }: SidebarProps) {
+export function Sidebar({ isOpen, onClose, user }: SidebarProps) {
   const pathname = usePathname()
-  const [currentUser, setCurrentUser] = useState<SessionUser | null>(null)
-  const [loading, setLoading] = useState(true)
 
   // Verificar se usuário pode acessar configurações (OWNER ou ADMIN)
-  const canAccessSettings = currentUser?.role === UserRole.OWNER || currentUser?.role === UserRole.ADMIN
+  const canAccessSettings = user?.role === UserRole.OWNER || user?.role === UserRole.ADMIN
 
   // Verificar se usuário pode acessar um item do menu
   const canAccessMenuItem = (item: MenuItem): boolean => {
     if (!item.requiredRoles || item.requiredRoles.length === 0) {
       return true // Item disponível para todos
     }
-    return currentUser?.role ? item.requiredRoles.includes(currentUser.role) : false
+    return user?.role ? item.requiredRoles.includes(user.role) : false
   }
-
-  // Buscar sessão do usuário
-  useEffect(() => {
-    const fetchSession = async () => {
-      try {
-        const response = await fetch('/api/auth/session')
-        if (response.ok) {
-          const data = await response.json()
-          if (data.user) {
-            setCurrentUser(data.user)
-          }
-        }
-      } catch (err) {
-        console.error('Erro ao carregar sessão:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchSession()
-  }, [])
 
   // Função para renderizar item do menu
   const renderMenuItem = (item: MenuItem) => {
@@ -190,7 +170,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
 
         {/* Separador e menu de configurações (apenas OWNER/ADMIN) */}
-        {!loading && canAccessSettings && (
+        {canAccessSettings && (
           <>
             <div className="my-4 border-t border-slate-200 dark:border-slate-700" />
             <div className="space-y-1">

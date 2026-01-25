@@ -4,10 +4,6 @@ import { auth } from "@/lib/auth"
 import { specialtyRepository } from "@/modules/specialties/infra/specialty.repository"
 import { procedureRepository } from "@/modules/procedures/infra/procedure.repository"
 import { revalidatePath } from "next/cache"
-import {
-    createSpecialtySchema,
-    updateSpecialtySchema
-} from "@/modules/specialties/domain/specialty.schema"
 import { UserRole } from "@prisma/client"
 import { createProcedure } from "@/modules/procedures/application/create-procedure"
 import { updateProcedure } from "@/modules/procedures/application/update-procedure"
@@ -29,40 +25,11 @@ async function checkAuth(requiredRoles: UserRole[] = []) {
     return user
 }
 
-// --- SPECIALTIES ---
+// --- SPECIALTIES (READ-ONLY) ---
 
 export async function getSpecialtiesAction() {
-    const user = await checkAuth()
-    return await specialtyRepository.findMany(user.clinicId)
-}
-
-export async function createSpecialtyAction(data: any) {
-    const user = await checkAuth([UserRole.OWNER, UserRole.ADMIN])
-
-    const validated = createSpecialtySchema.parse(data)
-
-    await specialtyRepository.create(user.clinicId, validated)
-    revalidatePath('/services')
-    return { success: true }
-}
-
-export async function updateSpecialtyAction(data: any) {
-    const user = await checkAuth([UserRole.OWNER, UserRole.ADMIN])
-
-    const validated = updateSpecialtySchema.parse(data)
-    if (!validated.id) throw new Error("ID required")
-
-    await specialtyRepository.update(validated.id, user.clinicId, validated)
-    revalidatePath('/services')
-    return { success: true }
-}
-
-export async function toggleSpecialtyStatusAction(id: string, isActive: boolean) {
-    const user = await checkAuth([UserRole.OWNER, UserRole.ADMIN])
-
-    await specialtyRepository.update(id, user.clinicId, { id, isActive })
-    revalidatePath('/services')
-    return { success: true }
+    await checkAuth() // Still require authentication
+    return await specialtyRepository.findMany()
 }
 
 // --- PROCEDURES ---

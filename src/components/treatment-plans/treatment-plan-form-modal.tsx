@@ -39,9 +39,22 @@ interface Dentist {
   }
 }
 
+interface Procedure {
+  id: string
+  name: string
+  description: string | null
+  baseValue: number
+  commissionPercentage: number
+  isActive: boolean
+  specialty: {
+    id: string
+    name: string
+  }
+}
+
 interface TreatmentItem {
+  procedureId: string | null
   description: string
-  tooth: string
   value: number
   quantity: number
 }
@@ -90,14 +103,18 @@ export function TreatmentPlanFormModal({
   // Dados dos selects
   const [patients, setPatients] = useState<Patient[]>([])
   const [dentists, setDentists] = useState<Dentist[]>([])
+  const [procedures, setProcedures] = useState<Procedure[]>([])
+  const [loadingProcedures, setLoadingProcedures] = useState(false)
   
   // Dados do formulário
   const [selectedPatientId, setSelectedPatientId] = useState('')
   const [selectedDentistId, setSelectedDentistId] = useState('')
   const [notes, setNotes] = useState('')
   const [items, setItems] = useState<TreatmentItem[]>([
-    { description: '', tooth: '', value: 0, quantity: 1 }
+    { procedureId: null, description: '', value: 0, quantity: 1 }
   ])
+  const [discountType, setDiscountType] = useState<'PERCENTAGE' | 'FIXED' | null>(null)
+  const [discountValue, setDiscountValue] = useState<number | null>(null)
 
   // Carregar pacientes e dentistas
   const loadData = async () => {
@@ -132,12 +149,57 @@ export function TreatmentPlanFormModal({
     }
   }
 
+  // Carregar procedimentos quando dentista for selecionado
+  const loadProcedures = async (dentistId: string) => {
+    if (!dentistId) {
+      setProcedures([])
+      return
+    }
+
+    try {
+      setLoadingProcedures(true)
+      setError(null)
+
+      const response = await fetch(`/api/dentists/${dentistId}/procedures`)
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Erro ao carregar procedimentos' }))
+        throw new Error(errorData.error || `Erro ${response.status}: ${response.statusText}`)
+      }
+
+      const data = await response.json()
+
+      if (!data.success) {
+        throw new Error(data.error || 'Erro ao carregar procedimentos')
+      }
+
+      // Garantir que data.data é um array
+      const proceduresList = Array.isArray(data.data) ? data.data : []
+      setProcedures(proceduresList)
+    } catch (err) {
+      console.error('Erro ao carregar procedimentos:', err)
+      setError(err instanceof Error ? err.message : 'Erro ao carregar procedimentos')
+      setProcedures([])
+    } finally {
+      setLoadingProcedures(false)
+    }
+  }
+
   // Carregar dados quando modal abrir
   useEffect(() => {
     if (open) {
       loadData()
     }
   }, [open])
+
+  // Carregar procedimentos quando dentista mudar
+  useEffect(() => {
+    if (selectedDentistId) {
+      loadProcedures(selectedDentistId)
+    } else {
+      setProcedures([])
+    }
+  }, [selectedDentistId])
 
   // Carregar dados do orçamento quando em modo de edição
   useEffect(() => {
@@ -146,8 +208,8 @@ export function TreatmentPlanFormModal({
       setSelectedDentistId(treatmentPlan.dentistId)
       setNotes(treatmentPlan.notes || '')
       setItems(treatmentPlan.items.map(item => ({
+        procedureId: item.procedureId,
         description: item.description,
-        tooth: item.tooth || '',
         value: item.value,
         quantity: item.quantity
       })))
@@ -174,7 +236,10 @@ export function TreatmentPlanFormModal({
         setSelectedPatientId(patientId || '')
         setSelectedDentistId('')
         setNotes('')
-        setItems([{ description: '', tooth: '', value: 0, quantity: 1 }])
+        setItems([{ procedureId: null, description: '', value: 0, quantity: 1 }])
+        setDiscountType(null)
+        setDiscountValue(null)
+        setProcedures([])
       }
     }
   }, [open, patientId, treatmentPlan])
@@ -184,9 +249,41 @@ export function TreatmentPlanFormModal({
     return sum + (item.value * item.quantity)
   }, 0)
 
+  // Calcular valor final com desconto
+  const calculateFinalAmount = (): number => {
+    if (!discountType || discountValue === null || discountValue === undefined) {
+      return totalAmount
+    }
+
+    if (discountType === 'PERCENTAGE') {
+      const discount = (totalAmount * discountValue) / 100
+      return Math.max(0, totalAmount - discount)
+    } else {
+      // FIXED
+      return Math.max(0, totalAmount - discountValue)
+    }
+  }
+
+  const finalAmount = calculateFinalAmount()
+
   // Adicionar novo item
   const addItem = () => {
-    setItems([...items, { description: '', tooth: '', value: 0, quantity: 1 }])
+    setItems([...items, { procedureId: null, description: '', value: 0, quantity: 1 }])
+  }
+
+  // Auto-preenchimento quando procedimento for selecionado
+  const handleProcedureSelect = (index: number, procedureId: string) => {
+    const procedure = procedures.find(p => p.id === procedureId)
+    if (!procedure) return
+
+    const updatedItems = [...items]
+    updatedItems[index] = {
+      ...updatedItems[index],
+      procedureId: procedure.id,
+      description: procedure.name,
+      value: procedure.baseValue
+    }
+    setItems(updatedItems)
   }
 
   // Remover item
@@ -198,6 +295,10 @@ export function TreatmentPlanFormModal({
 
   // Atualizar item
   const updateItem = (index: number, field: keyof TreatmentItem, value: string | number) => {
+    // Não permitir edição manual de valor quando há procedureId
+    if (field === 'value' && items[index].procedureId) {
+      return
+    }
     const updatedItems = [...items]
     updatedItems[index] = { ...updatedItems[index], [field]: value }
     setItems(updatedItems)
@@ -266,7 +367,6 @@ export function TreatmentPlanFormModal({
           notes: notes.trim() || null,
           items: items.map(item => ({
             description: item.description.trim(),
-            tooth: item.tooth.trim() || null,
             value: item.value,
             quantity: item.quantity
           }))
@@ -291,17 +391,31 @@ export function TreatmentPlanFormModal({
         onOpenChange(false)
       } else {
         // Modo de criação - criar novo orçamento
+        // Validar que todos os itens têm descrição e valor
+        const validItems = items.filter(item => {
+          return item.description.trim().length > 0 && item.value > 0
+        })
+
+        if (validItems.length === 0) {
+          setError('Adicione pelo menos um item válido ao orçamento')
+          return
+        }
+
         const submitData = {
           patientId: selectedPatientId,
           dentistId: selectedDentistId,
           notes: notes.trim() || null,
-          items: items.map(item => ({
+          items: validItems.map(item => ({
+            procedureId: item.procedureId && item.procedureId.trim() !== '' ? item.procedureId : null,
             description: item.description.trim(),
-            tooth: item.tooth.trim() || null,
-            value: item.value,
-            quantity: item.quantity
-          }))
+            value: Number(item.value),
+            quantity: Number(item.quantity) || 1
+          })),
+          discountType: discountType || null,
+          discountValue: discountValue !== null && discountValue !== undefined ? Number(discountValue) : null
         }
+
+        console.log('Dados a serem enviados:', submitData)
 
         const response = await fetch('/api/treatment-plans', {
           method: 'POST',
@@ -314,7 +428,10 @@ export function TreatmentPlanFormModal({
         const result = await response.json()
 
         if (!response.ok || !result.success) {
-          throw new Error(result.error || 'Erro ao criar orçamento')
+          console.error('Erro ao criar orçamento - Status:', response.status)
+          console.error('Erro ao criar orçamento - Resposta:', result)
+          const errorMessage = result.error || `Erro ao criar orçamento (${response.status})`
+          throw new Error(errorMessage)
         }
 
         // Sucesso
@@ -387,7 +504,15 @@ export function TreatmentPlanFormModal({
               {/* Dentista */}
               <div className="space-y-2">
                 <Label htmlFor="dentist" className="text-xs sm:text-sm">Dentista *</Label>
-                <Select value={selectedDentistId} onValueChange={setSelectedDentistId} disabled={isEditing}>
+                <Select 
+                  value={selectedDentistId} 
+                  onValueChange={(value) => {
+                    setSelectedDentistId(value)
+                    // Limpar itens quando mudar o dentista
+                    setItems([{ procedureId: null, description: '', value: 0, quantity: 1 }])
+                  }} 
+                  disabled={isEditing}
+                >
                   <SelectTrigger className="h-11 sm:h-10 text-sm sm:text-base">
                     <SelectValue placeholder="Selecione um dentista" />
                   </SelectTrigger>
@@ -402,6 +527,17 @@ export function TreatmentPlanFormModal({
                     ))}
                   </SelectContent>
                 </Select>
+                {selectedDentistId && loadingProcedures && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Carregando procedimentos...
+                  </p>
+                )}
+                {selectedDentistId && !loadingProcedures && procedures.length === 0 && (
+                  <p className="text-xs text-warning">
+                    Este dentista não possui procedimentos vinculados
+                  </p>
+                )}
               </div>
             </div>
 
@@ -442,29 +578,59 @@ export function TreatmentPlanFormModal({
                       )}
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                      {/* Descrição */}
-                      <div className="sm:col-span-2 space-y-1">
-                        <Label className="text-[10px] sm:text-xs uppercase font-bold text-slate-500">Descrição *</Label>
-                        <Input
-                          placeholder="Ex: Restauração em resina"
-                          value={item.description}
-                          onChange={(e) => updateItem(index, 'description', e.target.value)}
-                          disabled={loading}
-                          className="h-10 text-sm"
-                        />
-                      </div>
-
-                      {/* Dente */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Procedimento */}
                       <div className="space-y-1">
-                        <Label className="text-[10px] sm:text-xs uppercase font-bold text-slate-500">Dente</Label>
-                        <Input
-                          placeholder="Ex: 11, 21"
-                          value={item.tooth}
-                          onChange={(e) => updateItem(index, 'tooth', e.target.value)}
-                          disabled={loading}
-                          className="h-10 text-sm"
-                        />
+                        <Label className="text-[10px] sm:text-xs uppercase font-bold text-slate-500">Procedimento *</Label>
+                        <Select
+                          value={item.procedureId || ''}
+                          onValueChange={(value) => handleProcedureSelect(index, value)}
+                          disabled={loading || loadingProcedures || !selectedDentistId}
+                        >
+                          <SelectTrigger className="h-10 text-sm">
+                            <SelectValue 
+                              placeholder={
+                                !selectedDentistId 
+                                  ? "Selecione o dentista primeiro" 
+                                  : loadingProcedures 
+                                    ? "Carregando procedimentos..." 
+                                    : procedures.length === 0
+                                      ? "Nenhum procedimento disponível"
+                                      : "Selecione um procedimento"
+                              } 
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {loadingProcedures ? (
+                              <div className="p-2 text-center text-sm text-muted-foreground">
+                                <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
+                                Carregando...
+                              </div>
+                            ) : procedures.length === 0 ? (
+                              <div className="p-2 text-center text-sm text-muted-foreground">
+                                Nenhum procedimento vinculado a este dentista
+                              </div>
+                            ) : (
+                              procedures.map((procedure) => (
+                                <SelectItem key={procedure.id} value={procedure.id}>
+                                  <div className="text-left">
+                                    <div className="font-medium text-sm">{procedure.name}</div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {formatCurrency(procedure.baseValue)}
+                                    </div>
+                                  </div>
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                        {item.procedureId && (
+                          <Input
+                            value={item.description}
+                            readOnly
+                            className="h-10 text-sm mt-2 bg-muted"
+                          />
+                        )}
                       </div>
 
                       {/* Valor Unitário */}
@@ -477,8 +643,9 @@ export function TreatmentPlanFormModal({
                           placeholder="0,00"
                           value={item.value || ''}
                           onChange={(e) => updateItem(index, 'value', parseFloat(e.target.value) || 0)}
-                          disabled={loading}
-                          className="h-10 text-sm"
+                          disabled={loading || !!item.procedureId}
+                          readOnly={!!item.procedureId}
+                          className="h-10 text-sm bg-muted"
                         />
                       </div>
                     </div>

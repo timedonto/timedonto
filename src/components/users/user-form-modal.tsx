@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { UserRole } from '@prisma/client'
+import { useSession } from 'next-auth/react'
 import { Loader2 } from 'lucide-react'
 import {
   Dialog,
@@ -60,18 +61,34 @@ interface UserFormModalProps {
   onSuccess: () => void
 }
 
-const roleOptions = [
+// Opções de cargo base (sem OWNER)
+const baseRoleOptions = [
   { value: UserRole.ADMIN, label: 'Administrador' },
   { value: UserRole.DENTIST, label: 'Dentista' },
   { value: UserRole.RECEPTIONIST, label: 'Recepcionista' },
 ]
 
+// Opções completas (incluindo OWNER)
+const allRoleOptions = [
+  { value: UserRole.OWNER, label: 'Proprietário' },
+  ...baseRoleOptions,
+]
+
 export function UserFormModal({ open, onOpenChange, user, onSuccess }: UserFormModalProps) {
+  const { data: session } = useSession()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const isEditing = !!user
   const title = isEditing ? 'Editar Usuário' : 'Novo Usuário'
+
+  // Determinar role do usuário atual
+  const currentUserRole = session?.user?.role as UserRole | undefined
+  const isOwner = currentUserRole === UserRole.OWNER
+
+  // Filtrar opções de cargo baseado no role do usuário atual
+  // ADMIN não pode criar/editar OWNER
+  const roleOptions = isOwner ? allRoleOptions : baseRoleOptions
 
   // Configurar formulário baseado no modo (criar/editar)
   const schema = isEditing ? updateUserFormSchema : createUserFormSchema

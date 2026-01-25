@@ -123,12 +123,16 @@ interface TreatmentPlanApiData {
   dentistId: string
   status: 'OPEN' | 'APPROVED' | 'REJECTED'
   totalAmount: number
+  discountType: 'PERCENTAGE' | 'FIXED' | null
+  discountValue: number | null
+  finalAmount: number
   notes: string | null
   createdAt: string
   updatedAt: string
   items: {
     id: string
     planId: string
+    procedureId: string | null
     description: string
     tooth: string | null
     value: number
@@ -162,6 +166,9 @@ interface PaymentApiData {
   id: string
   clinicId: string
   patientId: string | null
+  originalAmount: number
+  discountType: 'PERCENTAGE' | 'FIXED' | null
+  discountValue: number | null
   amount: number
   method: 'CASH' | 'PIX' | 'CARD'
   description: string | null
@@ -188,7 +195,7 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
   const router = useRouter()
   const { data: session } = useSession()
   const routerParams = useParams()
-  
+
   // Estado para o ID do paciente
   const [patientId, setPatientId] = useState<string | null>(null)
   const [patient, setPatient] = useState<Patient | null>(null)
@@ -200,7 +207,7 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
   const [appointmentModalOpen, setAppointmentModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('agenda')
-  
+
   // Estados para agendamentos
   const [appointments, setAppointments] = useState<AppointmentApiData[]>([])
   const [loadingAppointments, setLoadingAppointments] = useState(false)
@@ -221,27 +228,32 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
   const [loadingPayments, setLoadingPayments] = useState(false)
   const [paymentsError, setPaymentsError] = useState<string | null>(null)
 
+  // Estados para atendimentos
+  const [attendances, setAttendances] = useState<any[]>([])
+  const [loadingAttendances, setLoadingAttendances] = useState(false)
+  const [attendancesError, setAttendancesError] = useState<string | null>(null)
+
   // Extrair ID dos parâmetros - Testando múltiplas abordagens
   useEffect(() => {
     const extractParams = async () => {
       // Método 1: useParams (síncrono)
       const routerId = routerParams.id as string
       console.log('🔍 PARAMS DEBUG - useParams ID:', routerId) // Debug
-      
+
       // Método 2: params Promise (assíncrono)
       const resolvedParams = await params
       console.log('🔍 PARAMS DEBUG - Promise params ID:', resolvedParams.id) // Debug
-      
+
       // Método 3: URL atual
       console.log('🔍 PARAMS DEBUG - URL atual:', window.location.href) // Debug
       const urlParts = window.location.pathname.split('/')
       const urlId = urlParts[urlParts.length - 1]
       console.log('🔍 PARAMS DEBUG - ID da URL:', urlId) // Debug
-      
+
       // Usar o ID do useParams se disponível, senão usar o da Promise
       const finalId = routerId || resolvedParams.id
       console.log('🔍 PARAMS DEBUG - ID final escolhido:', finalId) // Debug
-      
+
       setPatientId(finalId)
     }
     extractParams()
@@ -250,14 +262,14 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
   // Buscar dados do paciente
   const fetchPatient = useCallback(async () => {
     if (!patientId) return
-    
+
     try {
       setLoading(true)
       setError(null)
 
       console.log('🚀 FETCH DEBUG - ID sendo usado:', patientId) // Debug
       console.log('🚀 FETCH DEBUG - URL completa:', `/api/patients/${patientId}`) // Debug
-      
+
       const response = await fetch(`/api/patients/${patientId}`, {
         cache: 'no-store', // Evitar cache
         headers: {
@@ -307,7 +319,7 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
       setTreatmentPlans([])
       setPayments([])
       setError(null)
-      
+
       console.log('🔄 RESET - Limpando dados anteriores e carregando ID:', patientId) // Debug
       fetchPatient()
     }
@@ -329,7 +341,7 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
   // Buscar agendamentos do paciente
   const fetchAppointments = useCallback(async () => {
     if (!patientId) return
-    
+
     try {
       setLoadingAppointments(true)
       setAppointmentsError(null)
@@ -337,7 +349,7 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
       const response = await fetch(`/api/appointments?patientId=${patientId}`, {
         cache: 'no-store'
       })
-      
+
       if (!response.ok) {
         throw new Error(`Erro HTTP: ${response.status} - ${response.statusText}`)
       }
@@ -372,7 +384,7 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
   // Buscar prontuários do paciente
   const fetchRecords = useCallback(async () => {
     if (!patientId) return
-    
+
     try {
       setLoadingRecords(true)
       setRecordsError(null)
@@ -380,7 +392,7 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
       const response = await fetch(`/api/patients/${patientId}/records`, {
         cache: 'no-store'
       })
-      
+
       if (!response.ok) {
         throw new Error(`Erro HTTP: ${response.status} - ${response.statusText}`)
       }
@@ -426,7 +438,7 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
   // Buscar orçamentos do paciente
   const fetchTreatmentPlans = useCallback(async () => {
     if (!patientId) return
-    
+
     try {
       setLoadingTreatmentPlans(true)
       setTreatmentPlansError(null)
@@ -434,7 +446,7 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
       const response = await fetch(`/api/treatment-plans?patientId=${patientId}`, {
         cache: 'no-store'
       })
-      
+
       if (!response.ok) {
         throw new Error(`Erro HTTP: ${response.status} - ${response.statusText}`)
       }
@@ -473,7 +485,7 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
   // Buscar pagamentos do paciente
   const fetchPayments = useCallback(async () => {
     if (!patientId) return
-    
+
     try {
       setLoadingPayments(true)
       setPaymentsError(null)
@@ -481,7 +493,7 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
       const response = await fetch(`/api/payments?patientId=${patientId}`, {
         cache: 'no-store'
       })
-      
+
       if (!response.ok) {
         throw new Error(`Erro HTTP: ${response.status} - ${response.statusText}`)
       }
@@ -511,6 +523,49 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
 
   const handleNewPayment = () => {
     setPaymentModalOpen(true)
+  }
+
+  // Buscar atendimentos do paciente
+  const fetchAttendances = useCallback(async () => {
+    if (!patientId) return
+
+    try {
+      setLoadingAttendances(true)
+      setAttendancesError(null)
+
+      const response = await fetch(`/api/attendances?patientId=${patientId}`, {
+        cache: 'no-store'
+      })
+
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status} - ${response.statusText}`)
+      }
+
+      const data = await response.json()
+
+      if (data.success && data.data) {
+        setAttendances(data.data)
+      } else {
+        throw new Error(data.error || 'Erro desconhecido ao buscar atendimentos')
+      }
+    } catch (err) {
+      console.error('Erro ao buscar atendimentos:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar atendimentos'
+      setAttendancesError(errorMessage)
+    } finally {
+      setLoadingAttendances(false)
+    }
+  }, [patientId])
+
+  // Carregar atendimentos quando a aba atendimentos for ativada
+  useEffect(() => {
+    if (activeTab === 'atendimentos' && patient) {
+      fetchAttendances()
+    }
+  }, [activeTab, patient, fetchAttendances])
+
+  const handleViewAttendance = (attendanceId: string) => {
+    router.push(`/attendances/${attendanceId}`)
   }
 
   // Truncar descrição para exibição na lista
@@ -636,6 +691,7 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
   // Configurar abas baseado nas permissões do usuário
   const tabs = [
     { id: 'agenda', label: 'Agenda', icon: Calendar },
+    { id: 'atendimentos', label: 'Atendimentos', icon: Clock },
     { id: 'orcamentos', label: 'Orçamentos', icon: Receipt },
     ...(canViewFinance ? [{ id: 'financeiro', label: 'Financeiro', icon: DollarSign }] : []),
     ...(canViewRecords ? [{ id: 'prontuario', label: 'Prontuário', icon: FileText }] : []),
@@ -690,7 +746,7 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
               <p className="text-xs sm:text-sm font-medium text-muted-foreground">Data de Nascimento</p>
               <p className="text-sm sm:text-base">{formatDate(patient.birthDate)}</p>
             </div>
-            
+
             {/* Seção de datas de cadastro */}
             <div className="pt-3 border-t border-border">
               <div className="space-y-2">
@@ -754,11 +810,10 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 py-3 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap transition-colors ${
-                    activeTab === tab.id
+                  className={`flex items-center gap-2 py-3 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap transition-colors ${activeTab === tab.id
                       ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   <Icon className="h-4 w-4" />
                   {tab.label}
@@ -855,7 +910,7 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
                                     {format(new Date(appointment.date), "dd/MM/yyyy", { locale: ptBR })}
                                   </span>
                                   <span className="text-sm text-muted-foreground">
-                                    {format(new Date(appointment.date), "HH:mm", { locale: ptBR })} 
+                                    {format(new Date(appointment.date), "HH:mm", { locale: ptBR })}
                                     ({appointment.durationMinutes}min)
                                   </span>
                                 </div>
@@ -882,6 +937,86 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
                       </Table>
                     </div>
                   </>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'atendimentos' && (
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <h3 className="text-lg font-semibold">Histórico de Atendimentos</h3>
+                </div>
+
+                {loadingAttendances ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Carregando atendimentos...
+                    </div>
+                  </div>
+                ) : attendancesError ? (
+                  <div className="text-center py-8 border rounded-lg">
+                    <h4 className="text-md font-semibold text-destructive mb-2">Erro ao carregar atendimentos</h4>
+                    <p className="text-muted-foreground mb-4">{attendancesError}</p>
+                    <Button onClick={fetchAttendances} variant="outline" size="sm">
+                      Tentar novamente
+                    </Button>
+                  </div>
+                ) : attendances.length === 0 ? (
+                  <div className="text-center py-8 border rounded-lg">
+                    <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h4 className="text-md font-semibold mb-2">Nenhum atendimento encontrado</h4>
+                    <p className="text-muted-foreground">
+                      Este paciente ainda não possui atendimentos registrados.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Data</TableHead>
+                          <TableHead>Dentista</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {attendances.map((att) => (
+                          <TableRow key={att.id}>
+                            <TableCell className="font-medium">
+                              {format(new Date(att.arrivalAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                            </TableCell>
+                            <TableCell>
+                              {att.dentist?.user.name || 'Não atribuído'}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={
+                                att.status === 'DONE' ? 'success' :
+                                  att.status === 'IN_PROGRESS' ? 'warning' :
+                                    att.status === 'CHECKED_IN' ? 'secondary' : 'destructive'
+                              }>
+                                {att.status === 'DONE' ? 'Finalizado' :
+                                  att.status === 'IN_PROGRESS' ? 'Em Atendimento' :
+                                    att.status === 'CHECKED_IN' ? 'Check-in' : 'Cancelado'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                onClick={() => handleViewAttendance(att.id)}
+                                variant="outline"
+                                size="sm"
+                                className="flex items-center gap-2"
+                              >
+                                <Eye className="h-4 w-4" />
+                                Ver
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 )}
               </div>
             )}
@@ -938,10 +1073,10 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
                             </div>
                             <Badge variant={
                               plan.status === 'OPEN' ? 'default' :
-                              plan.status === 'APPROVED' ? 'success' : 'destructive'
+                                plan.status === 'APPROVED' ? 'success' : 'destructive'
                             }>
                               {plan.status === 'OPEN' ? 'Aberto' :
-                               plan.status === 'APPROVED' ? 'Aprovado' : 'Rejeitado'}
+                                plan.status === 'APPROVED' ? 'Aprovado' : 'Rejeitado'}
                             </Badge>
                           </div>
                           <div className="text-sm">
@@ -989,18 +1124,28 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
                                 </div>
                               </TableCell>
                               <TableCell className="font-medium">
-                                {plan.totalAmount.toLocaleString('pt-BR', { 
-                                  style: 'currency', 
-                                  currency: 'BRL' 
-                                })}
+                                <div className="flex flex-col">
+                                  <span>
+                                    {(plan.finalAmount ?? plan.totalAmount).toLocaleString('pt-BR', {
+                                      style: 'currency',
+                                      currency: 'BRL'
+                                    })}
+                                  </span>
+                                  {plan.discountValue && (
+                                    <span className="text-[10px] text-destructive">
+                                      Desconto: {plan.discountType === 'PERCENTAGE' ? `${plan.discountValue}%` :
+                                        plan.discountValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                    </span>
+                                  )}
+                                </div>
                               </TableCell>
                               <TableCell>
                                 <Badge variant={
                                   plan.status === 'OPEN' ? 'default' :
-                                  plan.status === 'APPROVED' ? 'success' : 'destructive'
+                                    plan.status === 'APPROVED' ? 'success' : 'destructive'
                                 }>
                                   {plan.status === 'OPEN' ? 'Aberto' :
-                                   plan.status === 'APPROVED' ? 'Aprovado' : 'Rejeitado'}
+                                    plan.status === 'APPROVED' ? 'Aprovado' : 'Rejeitado'}
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-right">
@@ -1103,10 +1248,10 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
                             </div>
                             <Badge variant={
                               payment.method === 'CASH' ? 'success' :
-                              payment.method === 'PIX' ? 'default' : 'secondary'
+                                payment.method === 'PIX' ? 'default' : 'secondary'
                             }>
                               {payment.method === 'CASH' ? 'Dinheiro' :
-                               payment.method === 'PIX' ? 'PIX' : 'Cartão'}
+                                payment.method === 'PIX' ? 'PIX' : 'Cartão'}
                             </Badge>
                           </div>
                           <p className="text-xs text-muted-foreground truncate">{payment.description || '-'}</p>
@@ -1132,18 +1277,27 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
                                 {format(new Date(payment.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                               </TableCell>
                               <TableCell className="font-medium">
-                                {payment.amount.toLocaleString('pt-BR', {
-                                  style: 'currency',
-                                  currency: 'BRL'
-                                })}
+                                <div className="flex flex-col">
+                                  <span>
+                                    {payment.amount.toLocaleString('pt-BR', {
+                                      style: 'currency',
+                                      currency: 'BRL'
+                                    })}
+                                  </span>
+                                  {payment.discountValue && (
+                                    <span className="text-[10px] text-destructive">
+                                      Orig: {payment.originalAmount?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                    </span>
+                                  )}
+                                </div>
                               </TableCell>
                               <TableCell>
                                 <Badge variant={
                                   payment.method === 'CASH' ? 'success' :
-                                  payment.method === 'PIX' ? 'default' : 'secondary'
+                                    payment.method === 'PIX' ? 'default' : 'secondary'
                                 }>
                                   {payment.method === 'CASH' ? 'Dinheiro' :
-                                   payment.method === 'PIX' ? 'PIX' : 'Cartão'}
+                                    payment.method === 'PIX' ? 'PIX' : 'Cartão'}
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-muted-foreground">

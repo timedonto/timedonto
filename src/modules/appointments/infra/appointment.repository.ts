@@ -565,6 +565,8 @@ export class AppointmentRepository {
       durationMinutes: appointment.durationMinutes,
       status: appointment.status,
       procedure: appointment.procedure,
+      procedureId: appointment.procedureId,
+      procedureSnapshot: appointment.procedureSnapshot,
       notes: appointment.notes,
       createdAt: appointment.createdAt,
       updatedAt: appointment.updatedAt,

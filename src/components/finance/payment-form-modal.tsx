@@ -31,6 +31,9 @@ interface TreatmentPlan {
   id: string
   status: 'OPEN' | 'APPROVED' | 'REJECTED'
   totalAmount: number
+  discountType: 'PERCENTAGE' | 'FIXED' | null
+  discountValue: number | null
+  finalAmount: number
   notes: string | null
   createdAt: string
   patient: {
@@ -82,6 +85,8 @@ export function PaymentFormModal({ open, onOpenChange, onSuccess, patientId }: P
   const [amount, setAmount] = useState('')
   const [method, setMethod] = useState<PaymentMethod | ''>('')
   const [description, setDescription] = useState('')
+  const [discountType, setDiscountType] = useState<'PERCENTAGE' | 'FIXED' | null>(null)
+  const [discountValue, setDiscountValue] = useState<number | null>(null)
 
   // Carregar pacientes
   const loadPatients = async () => {
@@ -173,6 +178,19 @@ export function PaymentFormModal({ open, onOpenChange, onSuccess, patientId }: P
     }
   }, [selectedPatientId])
 
+  // Calcular amount automaticamente quando orçamentos são selecionados
+  useEffect(() => {
+    if (selectedTreatmentPlanIds.length > 0) {
+      const total = treatmentPlans
+        .filter(plan => selectedTreatmentPlanIds.includes(plan.id))
+        .reduce((sum, plan) => sum + (plan.finalAmount || plan.totalAmount), 0)
+      setAmount(total.toFixed(2))
+    } else if (selectedPatientId === 'none') {
+      // Se não há paciente selecionado, limpar amount para permitir entrada manual
+      setAmount('')
+    }
+  }, [selectedTreatmentPlanIds, treatmentPlans, selectedPatientId])
+
   // Limpar formulário quando modal fechar
   useEffect(() => {
     if (!open) {
@@ -183,8 +201,31 @@ export function PaymentFormModal({ open, onOpenChange, onSuccess, patientId }: P
       setAmount('')
       setMethod('')
       setDescription('')
+      setDiscountType(null)
+      setDiscountValue(null)
     }
   }, [open, patientId])
+
+  // Calcular valor final com desconto
+  const calculateFinalAmount = (): number => {
+    const originalAmount = parseFloat(amount) || 0
+    if (originalAmount === 0) return 0
+    
+    if (!discountType || discountValue === null || discountValue === undefined) {
+      return originalAmount
+    }
+
+    if (discountType === 'PERCENTAGE') {
+      const discount = (originalAmount * discountValue) / 100
+      return Math.max(0, originalAmount - discount)
+    } else {
+      // FIXED
+      return Math.max(0, originalAmount - discountValue)
+    }
+  }
+
+  const finalAmount = calculateFinalAmount()
+  const hasTreatmentPlans = selectedTreatmentPlanIds.length > 0
 
   // Validar formulário
   const validateForm = () => {
@@ -195,6 +236,22 @@ export function PaymentFormModal({ open, onOpenChange, onSuccess, patientId }: P
 
     if (!method) {
       setError('Selecione um método de pagamento')
+      return false
+    }
+
+    // Validar desconto
+    if (discountType && (discountValue === null || discountValue === undefined)) {
+      setError('Informe o valor do desconto')
+      return false
+    }
+
+    if (discountType === 'PERCENTAGE' && (discountValue! < 0 || discountValue! > 100)) {
+      setError('Desconto percentual deve estar entre 0% e 100%')
+      return false
+    }
+
+    if (discountType === 'FIXED' && discountValue! > parseFloat(amount)) {
+      setError('Desconto fixo não pode exceder o valor do pagamento')
       return false
     }
 
@@ -214,11 +271,13 @@ export function PaymentFormModal({ open, onOpenChange, onSuccess, patientId }: P
       setError(null)
 
       const submitData = {
-        amount: parseFloat(amount),
+        amount: hasTreatmentPlans ? undefined : parseFloat(amount), // Opcional quando há orçamentos
         method,
         patientId: selectedPatientId === 'none' ? null : selectedPatientId,
         description: description.trim() || null,
-        treatmentPlanIds: selectedTreatmentPlanIds.length > 0 ? selectedTreatmentPlanIds : undefined
+        treatmentPlanIds: selectedTreatmentPlanIds.length > 0 ? selectedTreatmentPlanIds : undefined,
+        discountType: discountType || null,
+        discountValue: discountValue ?? null
       }
 
       const response = await fetch('/api/payments', {
@@ -277,11 +336,11 @@ export function PaymentFormModal({ open, onOpenChange, onSuccess, patientId }: P
     })
   }
 
-  // Calcular total dos orçamentos selecionados
+  // Calcular total dos orçamentos selecionados (usando finalAmount)
   const getSelectedTreatmentPlansTotal = () => {
     return treatmentPlans
       .filter(plan => selectedTreatmentPlanIds.includes(plan.id))
-      .reduce((sum, plan) => sum + plan.totalAmount, 0)
+      .reduce((sum, plan) => sum + (plan.finalAmount || plan.totalAmount), 0)
   }
 
   // Formatar valor para exibição
@@ -425,7 +484,9 @@ export function PaymentFormModal({ open, onOpenChange, onSuccess, patientId }: P
 
             {/* Valor */}
             <div className="space-y-2">
-              <Label htmlFor="amount" className="text-xs sm:text-sm font-medium">Valor *</Label>
+              <Label htmlFor="amount" className="text-xs sm:text-sm font-medium">
+                Valor {hasTreatmentPlans ? '(calculado automaticamente)' : '*'}
+              </Label>
               <div className="space-y-1">
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">R$</span>
@@ -435,17 +496,127 @@ export function PaymentFormModal({ open, onOpenChange, onSuccess, patientId }: P
                     placeholder="0.00"
                     value={amount}
                     onChange={handleAmountChange}
-                    disabled={loading}
-                    className="pl-9 h-11 sm:h-10 text-sm sm:text-base font-medium"
+                    disabled={loading || hasTreatmentPlans}
+                    readOnly={hasTreatmentPlans}
+                    className={`pl-9 h-11 sm:h-10 text-sm sm:text-base font-medium ${hasTreatmentPlans ? 'bg-muted' : ''}`}
                   />
                 </div>
-                {amount && (
+                {hasTreatmentPlans && (
+                  <p className="text-xs text-muted-foreground">
+                    Valor calculado automaticamente dos orçamentos selecionados
+                  </p>
+                )}
+                {amount && !hasTreatmentPlans && (
                   <p className="text-xs text-primary font-bold">
                     Extenso: {formatCurrency(amount)}
                   </p>
                 )}
               </div>
             </div>
+
+            {/* Desconto */}
+            {amount && parseFloat(amount) > 0 && (
+              <div className="space-y-2 border-t pt-4">
+                <Label className="text-xs sm:text-sm font-medium">Desconto (opcional)</Label>
+                <div className="flex gap-4">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="payment-discount-percentage"
+                      name="paymentDiscountType"
+                      value="PERCENTAGE"
+                      checked={discountType === 'PERCENTAGE'}
+                      onChange={(e) => {
+                        setDiscountType(e.target.checked ? 'PERCENTAGE' : null)
+                        if (!e.target.checked) {
+                          setDiscountValue(null)
+                        }
+                      }}
+                      className="h-4 w-4"
+                    />
+                    <Label htmlFor="payment-discount-percentage" className="font-normal cursor-pointer">Percentual (%)</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="payment-discount-fixed"
+                      name="paymentDiscountType"
+                      value="FIXED"
+                      checked={discountType === 'FIXED'}
+                      onChange={(e) => {
+                        setDiscountType(e.target.checked ? 'FIXED' : null)
+                        if (!e.target.checked) {
+                          setDiscountValue(null)
+                        }
+                      }}
+                      className="h-4 w-4"
+                    />
+                    <Label htmlFor="payment-discount-fixed" className="font-normal cursor-pointer">Valor Fixo (R$)</Label>
+                  </div>
+                  {discountType && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setDiscountType(null)
+                        setDiscountValue(null)
+                      }}
+                      className="h-8 text-xs"
+                    >
+                      Remover
+                    </Button>
+                  )}
+                </div>
+
+                {discountType && (
+                  <div className="space-y-2">
+                    <Input
+                      type="number"
+                      min="0"
+                      step={discountType === 'PERCENTAGE' ? '0.01' : '0.01'}
+                      max={discountType === 'PERCENTAGE' ? '100' : undefined}
+                      placeholder={discountType === 'PERCENTAGE' ? '0.00' : '0,00'}
+                      value={discountValue || ''}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value) || 0
+                        setDiscountValue(val)
+                      }}
+                      disabled={loading}
+                      className="h-10 text-sm"
+                    />
+                    {discountType === 'PERCENTAGE' && discountValue && (
+                      <p className="text-xs text-muted-foreground">
+                        Desconto: {formatCurrencyValue((parseFloat(amount) * discountValue) / 100)}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {discountType && discountValue !== null && (
+                  <div className="rounded-lg bg-primary/5 p-3 border border-primary/10">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Valor original:</span>
+                      <span className="font-medium">{formatCurrencyValue(parseFloat(amount))}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm pt-1">
+                      <span className="text-muted-foreground">Desconto:</span>
+                      <span className="font-medium text-destructive">
+                        -{formatCurrencyValue(
+                          discountType === 'PERCENTAGE'
+                            ? (parseFloat(amount) * discountValue) / 100
+                            : discountValue
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm pt-2 border-t font-bold">
+                      <span>Valor final:</span>
+                      <span className="text-lg text-primary">{formatCurrencyValue(finalAmount)}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Método de Pagamento */}
             <div className="space-y-2">
@@ -514,8 +685,17 @@ export function PaymentFormModal({ open, onOpenChange, onSuccess, patientId }: P
                   )}
                   <div className="flex justify-between items-center pt-2 border-t">
                     <span className="font-bold">Total:</span>
-                    <span className="font-bold text-lg text-primary">{formatCurrency(amount)}</span>
+                    <span className="font-bold text-lg text-primary">
+                      {discountType && discountValue !== null
+                        ? formatCurrencyValue(finalAmount)
+                        : formatCurrency(amount)}
+                    </span>
                   </div>
+                  {discountType && discountValue !== null && (
+                    <div className="text-xs text-muted-foreground pt-1">
+                      Valor original: {formatCurrencyValue(parseFloat(amount))} | Desconto aplicado
+                    </div>
+                  )}
                   {selectedTreatmentPlanIds.length > 0 && (
                     <div className="text-xs text-muted-foreground pt-1">
                       * Orçamentos em aberto serão automaticamente aprovados

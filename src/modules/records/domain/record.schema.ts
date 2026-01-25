@@ -15,6 +15,7 @@ export const createRecordSchema = z.object({
   patientId: z.string().min(1, 'ID do paciente é obrigatório'),
   dentistId: z.string().min(1, 'ID do dentista é obrigatório'),
   appointmentId: z.string().optional(),
+  attendanceId: z.string().optional(),
   description: z.string().min(10, 'Descrição deve ter pelo menos 10 caracteres'),
   procedures: z.array(procedureSchema).optional(),
   odontogram: odontogramSchema.optional(),

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { getPatient, updatePatient } from '@/modules/patients/application'
+import { getPatient, updatePatient, getPatientSchema } from '@/modules/patients/application'
 
 /**
  * GET /api/patients/[id]
@@ -23,20 +23,24 @@ export async function GET(
     // Aguardar parâmetros
     const resolvedParams = await params
     const patientId = resolvedParams.id
-    console.log('🔥 API DEBUG - URL da requisição:', request.url) // Debug
-    console.log('🔥 API DEBUG - Params resolvidos:', resolvedParams) // Debug
-    console.log('🔥 API DEBUG - ID do paciente:', patientId) // Debug
-    console.log('🔥 API DEBUG - Clinic ID da sessão:', session.user.clinicId) // Debug
+
+    // Validar ID (deve ser CUID válido)
+    const idValidation = getPatientSchema.safeParse({ id: patientId })
+    if (!idValidation.success) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `ID inválido: ${idValidation.error.issues.map(i => i.message).join(', ')}` 
+        },
+        { status: 400 }
+      )
+    }
 
     // Chamar use case
     const result = await getPatient({
       id: patientId,
       clinicId: session.user.clinicId
     })
-
-    console.log('🔥 API DEBUG - Sucesso do use case:', result.success) // Debug
-    console.log('🔥 API DEBUG - Dados retornados:', result.data) // Debug
-    console.log('🔥 API DEBUG - Nome do paciente:', result.data?.name) // Debug
 
     if (!result.success) {
       return NextResponse.json(result, { status: 500 })
@@ -85,6 +89,18 @@ export async function PATCH(
     const resolvedParams = await params
     const patientId = resolvedParams.id
 
+    // Validar ID (deve ser CUID válido)
+    const idValidation = getPatientSchema.safeParse({ id: patientId })
+    if (!idValidation.success) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `ID inválido: ${idValidation.error.issues.map(i => i.message).join(', ')}` 
+        },
+        { status: 400 }
+      )
+    }
+
     // Ler e validar body
     let body
     try {
@@ -92,6 +108,23 @@ export async function PATCH(
     } catch {
       return NextResponse.json(
         { success: false, error: 'Body da requisição inválido' },
+        { status: 400 }
+      )
+    }
+
+    // Validar clinicId
+    const { updatePatientWithIdSchema } = await import('@/modules/patients/application')
+    const clinicIdValidation = updatePatientWithIdSchema.safeParse({
+      id: patientId,
+      data: body
+    })
+
+    if (!clinicIdValidation.success) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `Dados inválidos: ${clinicIdValidation.error.issues.map(i => i.message).join(', ')}` 
+        },
         { status: 400 }
       )
     }

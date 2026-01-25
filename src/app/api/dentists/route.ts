@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { UserRole } from '@prisma/client'
 import { auth } from '@/lib/auth'
-import { listDentists, createDentist } from '@/modules/dentists/application'
+import { listDentists, createDentist, listDentistsWithClinicSchema } from '@/modules/dentists/application'
 
 /**
  * GET /api/dentists
@@ -30,6 +30,22 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search')
     if (search) {
       filters.search = search.trim()
+    }
+
+    // Validar clinicId
+    const clinicIdValidation = listDentistsWithClinicSchema.safeParse({
+      clinicId: session.user.clinicId,
+      filters: Object.keys(filters).length > 0 ? filters : undefined
+    })
+
+    if (!clinicIdValidation.success) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `Dados inválidos: ${clinicIdValidation.error.issues.map(i => i.message).join(', ')}` 
+        },
+        { status: 400 }
+      )
     }
 
     // Chamar use case
@@ -84,6 +100,36 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validar clinicId
+    const { createDentistWithClinicSchema } = await import('@/modules/dentists/application')
+    const clinicIdValidation = createDentistWithClinicSchema.safeParse({
+      clinicId: session.user.clinicId,
+      data: body
+    })
+
+    if (!clinicIdValidation.success) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `Dados inválidos: ${clinicIdValidation.error.issues.map(i => i.message).join(', ')}` 
+        },
+        { status: 400 }
+      )
+    }
+
+    // Validação adicional: verificar se usuário já é dentista (proteção extra)
+    if (body.userId) {
+      const { dentistRepository } = await import('@/modules/dentists/infra/dentist.repository')
+      const isAlreadyDentist = await dentistRepository.userIsDentist(body.userId, session.user.clinicId)
+      
+      if (isAlreadyDentist) {
+        return NextResponse.json({
+          success: false,
+          error: 'Este usuário já está cadastrado como dentista. Operação não permitida.'
+        }, { status: 409 }) // Conflict
+      }
+    }
+
     // Chamar use case
     const result = await createDentist({
       clinicId: session.user.clinicId,
@@ -98,7 +144,12 @@ export async function POST(request: NextRequest) {
         data: result.data
       }, { status: 201 })
     } else {
-      return NextResponse.json(result, { status: 400 })
+      // Determinar status code baseado no tipo de erro
+      let statusCode = 400
+      if (result.error?.includes('Permissão') || result.error?.includes('não podem')) {
+        statusCode = 403
+      }
+      return NextResponse.json(result, { status: statusCode })
     }
 
   } catch (error) {
