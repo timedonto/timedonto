@@ -21,7 +21,14 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { AppointmentStatus } from '@prisma/client'
+
+type AppointmentStatus =
+  | 'SCHEDULED'
+  | 'CONFIRMED'
+  | 'CANCELED'
+  | 'RESCHEDULED'
+  | 'NO_SHOW'
+  | 'DONE'
 
 interface AppointmentDetailsPageProps {
   params: Promise<{ id: string }>
