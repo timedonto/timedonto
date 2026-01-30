@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole, AppointmentStatus } from '@prisma/client'
+import { PrismaClient } from '../src/generated/client'
 import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
@@ -44,7 +44,7 @@ async function main() {
       name: 'Dr. João Silva',
       email: 'joao@sorrisoperfeito.com.br',
       passwordHash,
-      role: UserRole.OWNER,
+      role: 'OWNER',
       isActive: true,
     },
   })
@@ -55,7 +55,7 @@ async function main() {
       name: 'Dra. Maria Santos',
       email: 'maria@sorrisoperfeito.com.br',
       passwordHash,
-      role: UserRole.DENTIST,
+      role: 'DENTIST',
       isActive: true,
     },
   })
@@ -66,7 +66,7 @@ async function main() {
       name: 'Dr. Rafael Costa',
       email: 'rafael@sorrisoperfeito.com.br',
       passwordHash,
-      role: UserRole.DENTIST,
+      role: 'DENTIST',
       isActive: true,
     },
   })
@@ -77,7 +77,7 @@ async function main() {
       name: 'Ana Paula Oliveira',
       email: 'ana@sorrisoperfeito.com.br',
       passwordHash,
-      role: UserRole.RECEPTIONIST,
+      role: 'RECEPTIONIST',
       isActive: true,
     },
   })
@@ -370,7 +370,7 @@ async function main() {
       patientId: patient1.id,
       date: new Date(today.setHours(14, 0, 0, 0)),
       durationMinutes: 60,
-      status: AppointmentStatus.CONFIRMED,
+      status: 'CONFIRMED',
       procedureId: procedure1.id,
       procedureSnapshot: {
         name: procedure1.name,
@@ -388,7 +388,7 @@ async function main() {
       patientId: patient2.id,
       date: new Date(today.setHours(16, 30, 0, 0)),
       durationMinutes: 30,
-      status: AppointmentStatus.SCHEDULED,
+      status: 'SCHEDULED',
       procedureId: procedure3.id,
       procedureSnapshot: {
         name: procedure3.name,
@@ -405,7 +405,7 @@ async function main() {
       patientId: patient3.id,
       date: new Date(tomorrow.setHours(10, 0, 0, 0)),
       durationMinutes: 45,
-      status: AppointmentStatus.SCHEDULED,
+      status: 'SCHEDULED',
       procedureId: procedure4.id,
       procedureSnapshot: {
         name: procedure4.name,
@@ -423,7 +423,7 @@ async function main() {
       patientId: patient4.id,
       date: new Date(nextWeek.setHours(15, 0, 0, 0)),
       durationMinutes: 120,
-      status: AppointmentStatus.SCHEDULED,
+      status: 'SCHEDULED',
       procedureId: procedure2.id,
       procedureSnapshot: {
         name: procedure2.name,
