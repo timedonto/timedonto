@@ -21,7 +21,7 @@ export async function createAuditLog(data: CreateAuditLogData) {
         action: data.action,
         targetId: data.targetId,
         targetType: data.targetType,
-        metadata: data.metadata ? JSON.stringify(data.metadata) : null,
+        metadata: data.metadata ? JSON.stringify(data.metadata) : undefined,
       },
     });
 

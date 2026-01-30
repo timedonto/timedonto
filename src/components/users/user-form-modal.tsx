@@ -31,7 +31,7 @@ const createUserFormSchema = z.object({
   email: z.string().email('Email deve ter um formato válido'),
   password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
   role: z.nativeEnum(UserRole, {
-    errorMap: () => ({ message: 'Selecione um cargo válido' })
+    message: 'Selecione um cargo válido'
   }),
 })
 
@@ -46,7 +46,7 @@ const updateUserFormSchema = z.object({
     return true
   }, 'Senha deve ter pelo menos 6 caracteres'),
   role: z.nativeEnum(UserRole, {
-    errorMap: () => ({ message: 'Selecione um cargo válido' })
+    message: 'Selecione um cargo válido'
   }),
   isActive: z.boolean().optional(),
 })

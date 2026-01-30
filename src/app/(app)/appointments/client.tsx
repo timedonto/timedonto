@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { AppointmentStatus } from "@prisma/client"
+import { AppointmentStatus } from "@/types/appointments"
 import {
     Plus,
     CheckCircle2,

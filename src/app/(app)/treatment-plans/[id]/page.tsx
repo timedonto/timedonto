@@ -30,6 +30,7 @@ interface TreatmentPlanApiData {
   items: {
     id: string
     planId: string
+    procedureId: string | null
     description: string
     tooth: string | null
     value: number

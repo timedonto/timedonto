@@ -37,7 +37,7 @@ export async function associateDentistSpecialties(
     const { clinicId, currentUserRole, data } = params
 
     // 1. Validar permissões
-    if (![UserRole.OWNER, UserRole.ADMIN].includes(currentUserRole)) {
+    if (!([UserRole.OWNER, UserRole.ADMIN] as readonly UserRole[]).includes(currentUserRole)) {
       return {
         success: false,
         error: 'Apenas proprietários e administradores podem associar especialidades'

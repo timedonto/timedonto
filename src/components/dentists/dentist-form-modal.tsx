@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Loader2 } from 'lucide-react'
@@ -24,33 +24,20 @@ import {
 import { DentistOutput } from '@/modules/dentists/domain/dentist.schema'
 import { SpecialtyOutput } from '@/modules/specialties/domain/specialty.schema'
 
-// Schema para criar dentista
-const createDentistFormSchema = z.object({
-  userId: z.string().min(1, 'Selecione um usuário'),
+// Schema único para criar e editar dentista (userId obrigatório só na criação, validado no submit)
+const dentistFormSchema = z.object({
+  userId: z.string().optional(),
   cro: z.string()
     .min(1, 'CRO é obrigatório')
     .regex(/^CRO-[A-Z]{2}\s+\d+$/, 'CRO deve seguir o formato: CRO-SP 12345'),
-  specialtyIds: z.array(z.string()).optional().default([]),
+  specialtyIds: z.array(z.string()).default([]),
   commission: z.number()
     .min(0, 'Comissão deve ser no mínimo 0%')
     .max(100, 'Comissão deve ser no máximo 100%')
     .optional()
 })
 
-// Schema para editar dentista
-const updateDentistFormSchema = z.object({
-  cro: z.string()
-    .min(1, 'CRO é obrigatório')
-    .regex(/^CRO-[A-Z]{2}\s+\d+$/, 'CRO deve seguir o formato: CRO-SP 12345'),
-  specialtyIds: z.array(z.string()).optional().default([]),
-  commission: z.number()
-    .min(0, 'Comissão deve ser no mínimo 0%')
-    .max(100, 'Comissão deve ser no máximo 100%')
-    .optional()
-})
-
-type CreateDentistFormData = z.infer<typeof createDentistFormSchema>
-type UpdateDentistFormData = z.infer<typeof updateDentistFormSchema>
+type DentistFormData = z.infer<typeof dentistFormSchema>
 
 interface User {
   id: string
@@ -79,8 +66,8 @@ export function DentistFormModal({ open, onOpenChange, dentist, users, specialti
     setValue,
     watch,
     formState: { errors }
-  } = useForm<CreateDentistFormData | UpdateDentistFormData>({
-    resolver: zodResolver(isEditing ? updateDentistFormSchema : createDentistFormSchema),
+  } = useForm<DentistFormData>({
+    resolver: zodResolver(dentistFormSchema) as Resolver<DentistFormData>,
     defaultValues: {
       userId: '',
       cro: '',
@@ -109,7 +96,11 @@ export function DentistFormModal({ open, onOpenChange, dentist, users, specialti
     }
   }, [open, isEditing, dentist, reset])
 
-  const onSubmit = async (data: CreateDentistFormData | UpdateDentistFormData) => {
+  const onSubmit = async (data: DentistFormData) => {
+    if (!isEditing && !data.userId) {
+      alert('Selecione um usuário')
+      return
+    }
     setIsSubmitting(true)
     
     try {

@@ -250,8 +250,9 @@ export class PaymentRepository {
         })
 
         // Criar as relações payment-treatmentPlan
+        const treatmentPlanIds = data.treatmentPlanIds ?? []
         await tx.paymentTreatmentPlan.createMany({
-          data: data.treatmentPlanIds.map(treatmentPlanId => ({
+          data: treatmentPlanIds.map(treatmentPlanId => ({
             paymentId: payment.id,
             treatmentPlanId,
           }))
@@ -260,7 +261,7 @@ export class PaymentRepository {
         // Atualizar status dos treatment plans de OPEN para APPROVED
         await tx.treatmentPlan.updateMany({
           where: {
-            id: { in: data.treatmentPlanIds },
+            id: { in: treatmentPlanIds },
             status: 'OPEN'
           },
           data: {
@@ -537,6 +538,9 @@ export class PaymentRepository {
         id: true,
         clinicId: true,
         patientId: true,
+        originalAmount: true,
+        discountType: true,
+        discountValue: true,
         amount: true,
         method: true,
         description: true,
@@ -572,6 +576,9 @@ export class PaymentRepository {
       id: payment.id,
       clinicId: payment.clinicId,
       patientId: payment.patientId,
+      originalAmount: payment.originalAmount != null ? Number(payment.originalAmount) : Number(payment.amount),
+      discountType: payment.discountType,
+      discountValue: payment.discountValue != null ? Number(payment.discountValue) : null,
       amount: Number(payment.amount),
       method: payment.method as PaymentMethod,
       description: payment.description,

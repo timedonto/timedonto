@@ -1,4 +1,4 @@
-import { Prisma, AppointmentStatus } from '@prisma/client'
+import { Prisma, AppointmentStatus } from '@/generated/client'
 import { prisma } from '@/lib/database'
 import {
   CreateAppointmentInput,

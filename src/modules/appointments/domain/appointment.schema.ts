@@ -22,7 +22,7 @@ export const createAppointmentSchema = z.object({
     .max(480, 'Duração deve ser no máximo 8 horas (480 minutos)')
     .default(30),
   status: z.nativeEnum(AppointmentStatus, {
-    errorMap: () => ({ message: 'Status deve ser SCHEDULED, CONFIRMED, CANCELED, RESCHEDULED, NO_SHOW ou DONE' })
+    message: 'Status deve ser SCHEDULED, CONFIRMED, CANCELED, RESCHEDULED, NO_SHOW ou DONE'
   }).default(AppointmentStatus.SCHEDULED),
   procedureId: z
     .string()
@@ -70,7 +70,7 @@ export const updateAppointmentSchema = z.object({
     .max(480, 'Duração deve ser no máximo 8 horas (480 minutos)')
     .optional(),
   status: z.nativeEnum(AppointmentStatus, {
-    errorMap: () => ({ message: 'Status deve ser SCHEDULED, CONFIRMED, CANCELED, RESCHEDULED, NO_SHOW ou DONE' })
+    message: 'Status deve ser SCHEDULED, CONFIRMED, CANCELED, RESCHEDULED, NO_SHOW ou DONE'
   }).optional(),
   procedureId: z
     .string()
@@ -120,7 +120,7 @@ export const listAppointmentsSchema = z.object({
     .datetime('Data final deve ser uma data ISO válida')
     .optional(),
   status: z.nativeEnum(AppointmentStatus, {
-    errorMap: () => ({ message: 'Status deve ser SCHEDULED, CONFIRMED, CANCELED, RESCHEDULED, NO_SHOW ou DONE' })
+    message: 'Status deve ser SCHEDULED, CONFIRMED, CANCELED, RESCHEDULED, NO_SHOW ou DONE'
   }).optional()
 })
 

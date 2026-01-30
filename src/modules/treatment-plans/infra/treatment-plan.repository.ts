@@ -389,7 +389,8 @@ export class TreatmentPlanRepository {
         }
 
         // Calcular novo total baseado nos itens fornecidos
-        const newTotal = calculateTotalAmount(data.items)
+        const items = data.items ?? []
+        const newTotal = calculateTotalAmount(items)
         updateData.totalAmount = newTotal
 
         // discountType, discountValue e finalAmount não são salvos pois as colunas podem não existir no banco
@@ -401,9 +402,9 @@ export class TreatmentPlanRepository {
         })
 
         // Criar novos itens
-        if (data.items.length > 0) {
+        if (items.length > 0) {
           await tx.treatmentItem.createMany({
-            data: data.items.map(item => ({
+            data: items.map(item => ({
               planId: id,
               procedureId: item.procedureId || null,
               description: item.description,
@@ -627,6 +628,7 @@ export class TreatmentPlanRepository {
             select: {
               id: true,
               planId: true,
+              procedureId: true,
               description: true,
               tooth: true,
               value: true,
@@ -640,19 +642,25 @@ export class TreatmentPlanRepository {
       })
     })
 
+    const totalAmount = Number(result.totalAmount)
+    const finalAmount = calculateFinalAmount(totalAmount, null, null)
     return {
       id: result.id,
       clinicId: result.clinicId,
       patientId: result.patientId,
       dentistId: result.dentistId,
       status: result.status as any,
-      totalAmount: Number(result.totalAmount),
+      totalAmount,
+      discountType: null,
+      discountValue: null,
+      finalAmount,
       notes: result.notes,
       createdAt: result.createdAt,
       updatedAt: result.updatedAt,
       items: result.items.map(item => ({
         id: item.id,
         planId: item.planId,
+        procedureId: item.procedureId,
         description: item.description,
         tooth: item.tooth,
         value: Number(item.value),
@@ -722,6 +730,7 @@ export class TreatmentPlanRepository {
             select: {
               id: true,
               planId: true,
+              procedureId: true,
               description: true,
               tooth: true,
               value: true,
@@ -735,19 +744,25 @@ export class TreatmentPlanRepository {
       })
     })
 
+    const totalAmount = Number(result.totalAmount)
+    const finalAmount = calculateFinalAmount(totalAmount, null, null)
     return {
       id: result.id,
       clinicId: result.clinicId,
       patientId: result.patientId,
       dentistId: result.dentistId,
       status: result.status as any,
-      totalAmount: Number(result.totalAmount),
+      totalAmount,
+      discountType: null,
+      discountValue: null,
+      finalAmount,
       notes: result.notes,
       createdAt: result.createdAt,
       updatedAt: result.updatedAt,
       items: result.items.map(item => ({
         id: item.id,
         planId: item.planId,
+        procedureId: item.procedureId,
         description: item.description,
         tooth: item.tooth,
         value: Number(item.value),

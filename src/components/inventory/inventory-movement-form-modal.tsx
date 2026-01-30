@@ -27,7 +27,7 @@ import { InventoryItemOutput } from '@/modules/inventory/domain/inventory-item.s
 // Schema para criar movimentação de estoque
 const createInventoryMovementFormSchema = z.object({
   itemId: z.string().min(1, 'Item é obrigatório'),
-  type: z.enum(['IN', 'OUT'], { required_error: 'Tipo é obrigatório' }),
+  type: z.enum(['IN', 'OUT'], { message: 'Tipo é obrigatório' }),
   quantity: z.number().min(1, 'Quantidade deve ser maior que 0').int('Quantidade deve ser um número inteiro'),
   notes: z.string().max(1000, 'Observações devem ter no máximo 1000 caracteres').optional(),
 })

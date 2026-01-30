@@ -161,11 +161,7 @@ export async function createInventoryMovement(params: CreateInventoryMovementPar
       appointment: result.appointment ? {
         id: result.appointment.id,
         date: result.appointment.date,
-        procedure: result.appointment.procedure,
-        patient: result.appointment.patient ? {
-          id: result.appointment.patient.id,
-          name: result.appointment.patient.name
-        } : undefined
+        procedure: result.appointment.procedure
       } : undefined
     }
 

@@ -21,7 +21,7 @@ export const createUserSchema = z.object({
     .min(6, 'Senha deve ter pelo menos 6 caracteres')
     .max(100, 'Senha deve ter no máximo 100 caracteres'),
   role: z.nativeEnum(UserRole, {
-    errorMap: () => ({ message: 'Cargo deve ser OWNER, ADMIN, DENTIST ou RECEPTIONIST' })
+    message: 'Cargo deve ser OWNER, ADMIN, DENTIST ou RECEPTIONIST'
   })
 })
 
@@ -44,7 +44,7 @@ export const updateUserSchema = z.object({
     .max(100, 'Senha deve ter no máximo 100 caracteres')
     .optional(),
   role: z.nativeEnum(UserRole, {
-    errorMap: () => ({ message: 'Cargo deve ser OWNER, ADMIN, DENTIST ou RECEPTIONIST' })
+    message: 'Cargo deve ser OWNER, ADMIN, DENTIST ou RECEPTIONIST'
   }).optional(),
   isActive: z.boolean().optional()
 })

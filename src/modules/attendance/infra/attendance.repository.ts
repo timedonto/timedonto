@@ -1,4 +1,4 @@
-import { Prisma, AttendanceStatus } from '@prisma/client';
+import { Prisma, AttendanceStatus } from '@/generated/client';
 import { prisma } from '@/lib/database';
 import {
   CreateAttendanceData,
@@ -159,10 +159,8 @@ export class AttendanceRepository {
     // Buscar CIDs usando o repository que inclui categorias
     const cidsWithCategories = await attendanceCIDRepository.findByAttendanceId(id);
 
-    // Adicionar CIDs com categorias ao attendance
-    attendance.cids = cidsWithCategories as any;
-
-    return this.mapToOutput(attendance);
+    // Passar attendance com cids para mapToOutput
+    return this.mapToOutput({ ...attendance, cids: cidsWithCategories });
   }
 
   /**

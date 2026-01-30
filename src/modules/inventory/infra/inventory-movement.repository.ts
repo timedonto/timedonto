@@ -192,11 +192,7 @@ export class InventoryMovementRepository {
       appointment: inventoryMovement.appointment ? {
         id: inventoryMovement.appointment.id,
         date: inventoryMovement.appointment.date,
-        procedure: inventoryMovement.appointment.procedure,
-        patient: inventoryMovement.appointment.patient ? {
-          id: inventoryMovement.appointment.patient.id,
-          name: inventoryMovement.appointment.patient.name
-        } : undefined
+        procedure: inventoryMovement.appointment.procedure
       } : undefined
     }
   }

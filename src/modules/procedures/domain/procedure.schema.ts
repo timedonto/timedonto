@@ -19,9 +19,9 @@ export const createProcedureSchema = z.object({
     .trim()
     .optional()
     .nullable(),
-  baseValue: z.number({ coerce: true }).min(0, 'Valor base deve ser maior ou igual a 0'),
+  baseValue: z.coerce.number().min(0, 'Valor base deve ser maior ou igual a 0'),
   commissionPercentage: z
-    .number({ coerce: true })
+    .coerce.number()
     .min(0, 'Comissão deve ser maior ou igual a 0')
     .max(100, 'Comissão deve ser menor ou igual a 100'),
   isActive: z
@@ -50,8 +50,8 @@ export const updateProcedureSchema = z.object({
     .trim()
     .optional()
     .nullable(),
-  baseValue: z.number({ coerce: true }).min(0).optional(),
-  commissionPercentage: z.number({ coerce: true }).min(0).max(100).optional(),
+  baseValue: z.coerce.number().min(0).optional(),
+  commissionPercentage: z.coerce.number().min(0).max(100).optional(),
   isActive: z
     .boolean()
     .optional()

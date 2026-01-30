@@ -10,7 +10,7 @@ export const createAttendanceSchema = z.object({
   appointmentId: z.string().cuid('ID do agendamento deve ser um CUID válido').optional(),
   dentistId: z.string().cuid('ID do dentista deve ser um CUID válido').optional(),
   createdByRole: z.nativeEnum(UserRole, {
-    errorMap: () => ({ message: 'Role deve ser OWNER, ADMIN, RECEPTIONIST ou DENTIST' })
+    message: 'Role deve ser OWNER, ADMIN, RECEPTIONIST ou DENTIST'
   }).refine(
     (role) =>
       role === UserRole.OWNER ||
@@ -75,7 +75,7 @@ export const addProcedureSchema = z.object({
   tooth: z.string().regex(/^(1[1-8]|2[1-8]|3[1-8]|4[1-8])$/, 'Dente deve estar entre 11-18, 21-28, 31-38, 41-48'),
   faces: z.array(z.enum(['O', 'M', 'D', 'V', 'L'])).min(1, 'Selecione pelo menos uma face'),
   clinicalStatus: z.enum(['SAUDAVEL', 'CARIE', 'RESTAURADO', 'AUSENTE', 'EM_TRATAMENTO', 'EXTRACAO'], {
-    errorMap: () => ({ message: 'Status clínico inválido' })
+    message: 'Status clínico inválido'
   }),
   observations: z.string().optional(),
   // Campos opcionais para compatibilidade
@@ -87,17 +87,15 @@ export const addProcedureSchema = z.object({
 
 export const updateOdontogramSchema = z.object({
   data: z.record(z.string(), z.string(), {
-    errorMap: () => ({ message: 'Odontograma deve ser um objeto válido' })
+    message: 'Odontograma deve ser um objeto válido'
   }),
 });
 
 export const createDocumentSchema = z.object({
   type: z.nativeEnum(ClinicalDocumentType, {
-    errorMap: () => ({ message: 'Tipo de documento inválido' })
+    message: 'Tipo de documento inválido'
   }),
-  payload: z.record(z.any(), {
-    errorMap: () => ({ message: 'Payload deve ser um objeto válido' })
-  }),
+  payload: z.record(z.string(), z.any()),
 });
 
 // =====================================================================

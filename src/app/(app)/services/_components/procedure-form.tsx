@@ -1,6 +1,6 @@
 "use client"
 
-import { useForm } from "react-hook-form"
+import { useForm, type Resolver } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
     createProcedureSchema,
@@ -57,7 +57,7 @@ export function ProcedureForm({
     const isEditing = !!procedure
 
     const form = useForm<CreateProcedureData>({
-        resolver: zodResolver(createProcedureSchema),
+        resolver: zodResolver(createProcedureSchema) as Resolver<CreateProcedureData>,
         defaultValues: {
             specialtyId: defaultSpecialtyId || "",
             name: "",

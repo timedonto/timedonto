@@ -98,12 +98,12 @@ export function PatientFormModal({ open, onOpenChange, patient, onSuccess }: Pat
 
   const { register, handleSubmit, formState: { errors }, reset, setValue, watch, trigger } = form
 
-  // Formatar data para input date
-  const formatDateForInput = (dateString: string | null) => {
-    if (!dateString) return ''
+  // Formatar data para input date (aceita string ou Date do Prisma)
+  const formatDateForInput = (date: string | Date | null) => {
+    if (!date) return ''
     try {
-      const date = new Date(dateString)
-      return date.toISOString().split('T')[0]
+      const d = typeof date === 'string' ? new Date(date) : date
+      return d.toISOString().split('T')[0]
     } catch {
       return ''
     }

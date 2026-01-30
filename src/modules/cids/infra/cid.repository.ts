@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@/generated/client';
 import { prisma } from '@/lib/database';
 import { CIDOutput } from '../domain/cid.schema';
 
@@ -73,7 +73,7 @@ export class CIDRepository {
    * Busca um CID por código
    */
   async findByCode(code: string): Promise<CIDOutput | null> {
-    const cid = await prisma.cid.findUnique({
+    const cid = await prisma.cID.findUnique({
       where: {
         code: code.toUpperCase(),
       },
