@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge"
 import { DataTableColumnHeader } from "@/components/shared/data-table-column-header"
 import { InventoryItemOutput } from "@/modules/inventory/domain/inventory-item.schema"
 
+export type { InventoryItemOutput }
+
 interface ColumnsProps {
     onEdit: (item: InventoryItemOutput) => void
 }

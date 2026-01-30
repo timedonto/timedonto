@@ -45,9 +45,7 @@ const updateAppointmentFormSchema = z.object({
     .int('Duração deve ser um número inteiro')
     .min(15, 'Duração deve ser no mínimo 15 minutos')
     .max(480, 'Duração deve ser no máximo 8 horas'),
-  status: z.nativeEnum(AppointmentStatus, {
-    errorMap: () => ({ message: 'Status inválido' })
-  }),
+  status: z.nativeEnum(AppointmentStatus, { message: 'Status inválido' }),
   notes: z.string().optional(),
 })
 
@@ -431,7 +429,7 @@ export function AppointmentFormModal({ open, onOpenChange, appointment, onSucces
                   ))}
                 </SelectContent>
               </Select>
-              {errors.status && (
+              {'status' in errors && errors.status && (
                 <p className="text-xs sm:text-sm text-destructive">{errors.status.message}</p>
               )}
             </div>

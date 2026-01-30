@@ -407,10 +407,10 @@ export default function ReportsPage() {
   ]
 
   // Calcular tendências para os cards
-  const getTrend = (current: number, previous: number) => {
-    if (previous === 0) return { trend: 'neutral' as const, value: '0%' }
+  const getTrend = (current: number, previous: number): { trend: 'up' | 'down' | 'neutral'; value: string } => {
+    if (previous === 0) return { trend: 'neutral', value: '0%' }
     const percentage = ((current - previous) / previous) * 100
-    const trend = percentage > 0 ? 'up' : percentage < 0 ? 'down' : 'neutral'
+    const trend: 'up' | 'down' | 'neutral' = percentage > 0 ? 'up' : percentage < 0 ? 'down' : 'neutral'
     return { trend, value: `${Math.abs(percentage).toFixed(1)}%` }
   }
 

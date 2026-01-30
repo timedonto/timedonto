@@ -172,7 +172,7 @@ export default function AttendanceDetailsPage() {
                         </Button>
                     )}
                     {attendance.status === 'IN_PROGRESS' && (
-                        <Button onClick={handleFinish} variant="success">
+                        <Button onClick={handleFinish} variant="default">
                             <CheckCircle2 className="mr-2 h-4 w-4" />
                             Finalizar Atendimento
                         </Button>

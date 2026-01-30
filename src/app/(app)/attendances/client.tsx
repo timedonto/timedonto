@@ -136,14 +136,14 @@ export function AttendanceClient({
             columns={columns}
             data={sortedData}
             searchKey="patientName"
-            toolbarFilters={[
+            filters={[
                 {
                     columnId: "status",
                     title: "Status",
                     options: statusOptions,
                 }
             ]}
-            customFilters={dateFilter}
+            extraToolbarContent={dateFilter}
         />
     )
 }

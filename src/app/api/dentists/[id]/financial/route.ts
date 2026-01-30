@@ -223,6 +223,7 @@ export async function GET(
               select: {
                 id: true,
                 name: true,
+                baseValue: true,
                 commissionPercentage: true
               }
             }

@@ -19,6 +19,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { PatientFormModal } from '@/components/patients/patient-form-modal'
+import type { PatientOutput } from '@/modules/patients/domain/patient.schema'
 import { RecordFormModal } from '@/components/records/record-form-modal'
 import { TreatmentPlanFormModal } from '@/components/treatment-plans/treatment-plan-form-modal'
 import { PaymentFormModal } from '@/components/finance/payment-form-modal'
@@ -1418,7 +1419,12 @@ export default function PatientDetailsPage({ params }: PatientDetailsPageProps) 
       <PatientFormModal
         open={isEditModalOpen}
         onOpenChange={setIsEditModalOpen}
-        patient={patient}
+        patient={patient ? {
+          ...patient,
+          birthDate: patient.birthDate ? new Date(patient.birthDate) : null,
+          createdAt: new Date(patient.createdAt),
+          updatedAt: new Date(patient.updatedAt),
+        } as PatientOutput : undefined}
         onSuccess={handleEditSuccess}
       />
 
