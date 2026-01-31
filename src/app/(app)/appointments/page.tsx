@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { AppointmentStatus } from '@prisma/client'
+import { AppointmentStatus } from '@/types/appointments'
 import { AppointmentsClient } from './client'
 import { AppointmentFormModal } from '@/components/appointments/appointment-form-modal'
 import { Appointment } from './columns'

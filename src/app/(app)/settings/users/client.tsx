@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { UserRole } from "@prisma/client"
+import { UserRole } from "@/types/roles"
 import { Plus, CheckCircle2, XCircle, ShieldCheck, UserCog, Stethoscope, Contact } from "lucide-react"
 
 import { Button } from "@/components/ui/button"

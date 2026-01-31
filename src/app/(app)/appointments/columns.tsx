@@ -2,7 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table"
 import { MoreHorizontal, Pencil, Calendar, User, Stethoscope, ClipboardList, Play } from "lucide-react"
-import { AppointmentStatus } from "@prisma/client"
+import { AppointmentStatus } from "@/types/appointments"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 

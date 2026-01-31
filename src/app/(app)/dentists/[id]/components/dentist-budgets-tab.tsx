@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { TreatmentPlanStatus } from '@prisma/client'
+import { TreatmentPlanStatus } from '@/types/treatment-plans'
 import { cn } from '@/lib/utils'
 
 interface TreatmentPlan {

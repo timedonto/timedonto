@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { UserRole } from '@prisma/client'
+import { UserRole } from '@/types/roles'
 import { Loader2, ShieldX } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 

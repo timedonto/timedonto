@@ -2,7 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table"
 import { MoreHorizontal, Pencil, UserCheck, UserX } from "lucide-react"
-import { UserRole } from "@prisma/client"
+import { UserRole } from "@/types/roles"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"

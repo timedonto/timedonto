@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import { ArrowLeft, Loader2, User, Calendar, FileText, Stethoscope, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { UserRole } from '@prisma/client';
+import { UserRole } from '@/types/roles';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

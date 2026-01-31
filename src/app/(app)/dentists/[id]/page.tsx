@@ -5,7 +5,7 @@ import { DentistDetailsClient } from './dentist-details-client'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { auth } from '@/lib/auth'
-import { UserRole } from '@prisma/client'
+import { UserRole } from '@/types/roles'
 
 export default async function DentistDetailsPage(props: { params: Promise<{ id: string }> }) {
     const params = await props.params;

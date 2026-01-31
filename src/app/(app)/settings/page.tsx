@@ -1,6 +1,6 @@
 "use client"
 
-import { UserRole } from '@prisma/client'
+import { UserRole } from '@/types/roles'
 import { Settings, Users, Database, Shield, Bell, Palette } from 'lucide-react'
 import Link from 'next/link'
 import { RequireRole } from '@/components/auth/require-role'

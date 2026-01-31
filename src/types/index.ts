@@ -1,4 +1,4 @@
-import type { UserRole } from '@prisma/client'
+import type { UserRole } from './roles'
 
 // Tipo do usuário na sessão
 export interface SessionUser {

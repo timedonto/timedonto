@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { AttendanceStatus } from "@prisma/client"
+import { AttendanceStatus } from "@/types/attendances"
 import {
     Plus,
     CheckCircle2,

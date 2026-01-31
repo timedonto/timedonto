@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { AppointmentStatus } from '@prisma/client'
+import { AppointmentStatus } from '@/types/appointments'
 import { format, startOfDay, endOfDay, addDays, subDays, isToday, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 

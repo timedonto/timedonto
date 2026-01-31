@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { UserRole } from '@prisma/client'
+import { UserRole } from '@/types/roles'
 import { useSession } from 'next-auth/react'
 import { UsersClient } from './client'
 import { UserFormModal } from '@/components/users/user-form-modal'

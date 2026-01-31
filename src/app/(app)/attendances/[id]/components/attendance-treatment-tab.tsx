@@ -6,7 +6,7 @@ import { Plus, MoreVertical, Loader2, Info } from "lucide-react"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { useSession } from "next-auth/react"
-import { UserRole } from "@prisma/client"
+import { UserRole } from "@/types/roles"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"

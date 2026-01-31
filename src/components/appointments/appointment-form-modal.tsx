@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Loader2 } from 'lucide-react'
-import { AppointmentStatus } from '@prisma/client'
+import { AppointmentStatus } from '@/types/appointments'
 import {
   Dialog,
   DialogContent,
