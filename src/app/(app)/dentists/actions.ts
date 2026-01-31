@@ -5,7 +5,7 @@ import { auth } from '@/lib/auth'
 import { dentistRepository } from '@/modules/dentists/infra/dentist.repository'
 import { updateDentistProcedures } from '@/modules/dentists/application/update-dentist-procedures'
 import { prisma } from '@/lib/database'
-import { UserRole } from '@prisma/client'
+import { UserRole } from '@/types/roles'
 
 export async function getDentist(id: string) {
     const session = await auth()

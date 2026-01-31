@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { listRecords, createRecord } from '@/modules/records/application';
 import { createAuditLog, AUDIT_ACTIONS, TARGET_TYPES } from '@/lib/audit-log';
-import { UserRole } from '@prisma/client';
+import { UserRole } from '@/types/roles';
 
 /**
  * GET /api/patients/[id]/records

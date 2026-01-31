@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { UserRole } from '@prisma/client';
+import { UserRole } from '@/types/roles';
 import { auth } from '@/lib/auth';
 import { addAttendanceProcedure } from '@/modules/attendance/application';
 import { addProcedureWithIdSchema } from '@/modules/attendance/domain/attendance.schema';

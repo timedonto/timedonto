@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { UserRole } from '@prisma/client'
+import { UserRole } from '@/types/roles'
 import { auth } from '@/lib/auth'
 import { updateUser, getUserSchema } from '@/modules/users/application'
 import { userRepository } from '@/modules/users/infra/user.repository'

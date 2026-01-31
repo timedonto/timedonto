@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { UserRole, AppointmentStatus } from '@prisma/client'
+import { UserRole } from '@/types/roles'
+import { AppointmentStatus } from '@/types/appointments'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/database'
 

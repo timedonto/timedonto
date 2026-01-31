@@ -6,7 +6,7 @@ import { dentistRepository } from '@/modules/dentists/infra/dentist.repository'
 import { specialtyRepository } from '@/modules/specialties/infra/specialty.repository'
 import { updateDentistProfile, updateDentist, associateDentistSpecialties } from '@/modules/dentists/application'
 import { UpdateDentistProfileInput } from '@/modules/dentists/domain/dentist.schema'
-import { UserRole } from '@prisma/client'
+import { UserRole } from '@/types/roles'
 
 export async function getAvailableSpecialtiesAction() {
     const session = await auth()

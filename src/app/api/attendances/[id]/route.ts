@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth';
 import { getAttendance } from '@/modules/attendance/application';
 import { getAttendanceSchema } from '@/modules/attendance/domain/attendance.schema';
 import { attendanceRepository } from '@/modules/attendance/infra/attendance.repository';
-import { AttendanceStatus } from '@prisma/client';
+import { AttendanceStatus } from '@/types/attendances';
 
 /**
  * GET /api/attendances/[id]

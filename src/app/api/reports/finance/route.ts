@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { UserRole, PaymentMethod } from '@prisma/client'
+import { UserRole } from '@/types/roles'
+import { PaymentMethod } from '@/types/finance'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/database'
 import { Decimal } from '@prisma/client/runtime/library'
