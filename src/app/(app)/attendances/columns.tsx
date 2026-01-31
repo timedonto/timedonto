@@ -109,7 +109,7 @@ export const getColumns = ({ onView, onStart, onFinish, onCancel }: ColumnsProps
             <DataTableColumnHeader column={column} title="Status" />
         ),
         cell: ({ row }) => {
-            const status = row.original.status
+            const status = row.original.status as AttendanceStatus
             return (
                 <Badge variant={statusVariants[status]}>
                     {statusLabels[status]}
