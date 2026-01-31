@@ -1,0 +1,22 @@
+# Dependencies and build output (rebuilt in container)
+node_modules
+.next
+out
+build
+
+# Env files (Coolify injects at runtime)
+.env*
+!.env.example
+
+# Git and IDE
+.git
+.gitignore
+.cursor
+*.md
+!README.md
+
+# Misc
+.DS_Store
+*.log
+coverage
+.vercel
