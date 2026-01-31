@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/database';
 import { CreateDocumentData } from '../domain/attendance.schema';
-import { ClinicalDocumentType } from '@prisma/client';
+import { ClinicalDocumentType } from '@/generated/client';
 
 export class ClinicalDocumentRepository {
   /**

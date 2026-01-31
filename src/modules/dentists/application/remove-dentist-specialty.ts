@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/database'
-import { UserRole } from '@prisma/client'
+import { UserRole } from '@/generated/client'
 import { RemoveDentistSpecialtyInput } from '../domain/dentist.schema'
 
 // =====================================================================

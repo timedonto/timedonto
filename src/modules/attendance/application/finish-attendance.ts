@@ -2,7 +2,7 @@ import { finishAttendanceSchema } from '../domain/attendance.schema';
 import { attendanceRepository } from '../infra/attendance.repository';
 import { attendanceCIDRepository } from '../infra/attendance-cid.repository';
 import { attendanceProcedureRepository } from '../infra/attendance-procedure.repository';
-import { AttendanceStatus } from '@prisma/client';
+import { AttendanceStatus } from '@/generated/client';
 import { prisma } from '@/lib/database';
 import { createRecord } from '@/modules/records/application/create-record';
 

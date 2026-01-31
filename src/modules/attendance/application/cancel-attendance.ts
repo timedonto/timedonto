@@ -1,6 +1,6 @@
 import { cancelAttendanceSchema, type CancelAttendanceData } from '../domain/attendance.schema';
 import { attendanceRepository } from '../infra/attendance.repository';
-import { AttendanceStatus } from '@prisma/client';
+import { AttendanceStatus } from '@/generated/client';
 
 export interface CancelAttendanceParams {
   attendanceId: string;

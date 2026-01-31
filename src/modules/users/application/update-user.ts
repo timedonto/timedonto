@@ -1,4 +1,4 @@
-import { UserRole } from '@prisma/client'
+import { UserRole } from '@/generated/client'
 import { userRepository } from '../infra/user.repository'
 import { 
   updateUserSchema, 

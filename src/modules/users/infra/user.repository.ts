@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs'
-import { UserRole } from '@prisma/client'
+import { UserRole } from '@/generated/client'
 import { prisma } from '@/lib/database'
 import {
   CreateUserInput,

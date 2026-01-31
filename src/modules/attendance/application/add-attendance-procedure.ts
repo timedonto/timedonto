@@ -1,7 +1,7 @@
 import { addProcedureSchema, type AddProcedureData } from '../domain/attendance.schema';
 import { attendanceRepository } from '../infra/attendance.repository';
 import { attendanceProcedureRepository } from '../infra/attendance-procedure.repository';
-import { AttendanceStatus } from '@prisma/client';
+import { AttendanceStatus } from '@/generated/client';
 import { prisma } from '@/lib/database';
 
 export interface AddAttendanceProcedureParams {

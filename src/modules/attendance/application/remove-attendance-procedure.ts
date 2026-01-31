@@ -1,6 +1,6 @@
 import { attendanceRepository } from '../infra/attendance.repository';
 import { attendanceProcedureRepository } from '../infra/attendance-procedure.repository';
-import { AttendanceStatus } from '@prisma/client';
+import { AttendanceStatus } from '@/generated/client';
 
 export interface RemoveAttendanceProcedureParams {
     attendanceId: string;

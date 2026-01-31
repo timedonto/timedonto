@@ -1,7 +1,7 @@
 import { updateOdontogramSchema, type UpdateOdontogramData } from '../domain/attendance.schema';
 import { attendanceRepository } from '../infra/attendance.repository';
 import { attendanceOdontogramRepository } from '../infra/attendance-odontogram.repository';
-import { AttendanceStatus } from '@prisma/client';
+import { AttendanceStatus } from '@/generated/client';
 
 export interface UpdateAttendanceOdontogramParams {
   attendanceId: string;

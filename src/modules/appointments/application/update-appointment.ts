@@ -1,4 +1,4 @@
-import { AppointmentStatus } from '@prisma/client'
+import { AppointmentStatus } from '@/generated/client'
 import { appointmentRepository } from '../infra/appointment.repository'
 import {
   updateAppointmentSchema,

@@ -1,7 +1,7 @@
 import { addCIDSchema, type AddCIDData } from '../domain/attendance.schema';
 import { attendanceRepository } from '../infra/attendance.repository';
 import { attendanceCIDRepository } from '../infra/attendance-cid.repository';
-import { AttendanceStatus } from '@prisma/client';
+import { AttendanceStatus } from '@/generated/client';
 import { prisma } from '@/lib/database';
 
 export interface AddAttendanceCIDParams {

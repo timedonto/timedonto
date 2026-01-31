@@ -1,7 +1,7 @@
 import { createAttendanceSchema, type CreateAttendanceData } from '../domain/attendance.schema';
 import { attendanceRepository } from '../infra/attendance.repository';
 import { prisma } from '@/lib/database';
-import { AttendanceStatus } from '@prisma/client';
+import { AttendanceStatus } from '@/generated/client';
 
 export interface CheckInAttendanceParams {
   clinicId: string;

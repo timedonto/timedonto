@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { UserRole } from '@prisma/client'
+import { UserRole } from '@/generated/client'
 
 // =====================================================================
 // VALIDATION SCHEMAS

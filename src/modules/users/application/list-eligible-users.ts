@@ -1,6 +1,6 @@
 import { userRepository } from '../infra/user.repository'
 import { dentistRepository } from '@/modules/dentists/infra/dentist.repository'
-import { UserRole } from '@prisma/client'
+import { UserRole } from '@/generated/client'
 import { UserOutput } from '../domain/user.schema'
 
 export interface ListEligibleUsersParams {

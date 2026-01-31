@@ -1,4 +1,4 @@
-import { UserRole } from '@prisma/client'
+import { UserRole } from '@/generated/client'
 import { dentistRepository } from '../infra/dentist.repository'
 import { userRepository } from '@/modules/users/infra/user.repository'
 import {

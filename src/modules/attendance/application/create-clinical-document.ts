@@ -1,7 +1,7 @@
 import { createDocumentSchema, type CreateDocumentData } from '../domain/attendance.schema';
 import { attendanceRepository } from '../infra/attendance.repository';
 import { clinicalDocumentRepository } from '../infra/clinical-document.repository';
-import { AttendanceStatus } from '@prisma/client';
+import { AttendanceStatus } from '@/generated/client';
 
 export interface CreateClinicalDocumentParams {
   attendanceId: string;

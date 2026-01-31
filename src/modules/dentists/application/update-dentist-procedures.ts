@@ -1,4 +1,4 @@
-import { UserRole } from '@prisma/client'
+import { UserRole } from '@/generated/client'
 import { prisma } from '@/lib/database'
 import {
     updateDentistProceduresSchema,

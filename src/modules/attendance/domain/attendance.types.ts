@@ -1,4 +1,4 @@
-import { AttendanceStatus, ClinicalDocumentType } from '@prisma/client';
+import { AttendanceStatus, ClinicalDocumentType } from '@/generated/client';
 
 // =====================================================================
 // TYPE EXPORTS

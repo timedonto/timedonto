@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AttendanceStatus, ClinicalDocumentType, UserRole } from '@prisma/client';
+import { AttendanceStatus, ClinicalDocumentType, UserRole } from '@/generated/client';
 
 // =====================================================================
 // VALIDATION SCHEMAS
